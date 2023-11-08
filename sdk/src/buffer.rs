@@ -59,7 +59,6 @@ impl SimpleBufferCursor {
 
     pub fn read_u256_be(&mut self) -> Result<U256> {
         let size = self.next()?;
-        println!("{}", size);
         let mut bytes = vec![];
         for _ in 0..size {
             bytes.push(self.next()?)

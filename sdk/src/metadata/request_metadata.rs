@@ -36,105 +36,6 @@ impl RequestMetadata {
             gas_budget: gas_budget.into(),
         }
     }
-
-    pub fn serialize(&self) -> crate::Result<String> {
-        let mut metadata = SimpleBufferCursor::default();
-        metadata.write_uint8(self.sender_contract.kind());
-        metadata.write_bytes(hex::decode(format!("{:?}", self.sender_contract)).unwrap().as_slice());
-        metadata.write_uint32_le(self.target_contract);
-        metadata.write_uint32_le(self.target_entry_point);
-        metadata.write_uint64_special_encoding(*self.gas_budget + 1);
-
-        // params
-        metadata.write_uint64_special_encoding(self.params.len() as u64);
-        for entry in &self.params {
-            let key_bytes = entry.0.as_bytes();
-            metadata.write_uint64_special_encoding(key_bytes.len() as u64);
-            metadata.write_bytes(key_bytes);
-            metadata.write_uint64_special_encoding(entry.1.len() as u64);
-            metadata.write_bytes(entry.1);
-        }
-
-        // assets
-        let mut flags: u8 = 0;
-        if self.allowance.has_base_tokens() {
-            flags |= 0x80
-        }
-        if self.allowance.has_native_tokens() {
-            flags |= 0x40
-        }
-        if self.allowance.has_nfts() {
-            flags |= 0x20
-        }
-        metadata.write_uint8(flags);
-        if self.allowance.has_base_tokens() {
-            metadata.write_uint64_special_encoding(self.allowance.get_base_tokens())
-        }
-        if let Some(tokens) = self.allowance.get_native_tokens() {
-            metadata.write_uint64_special_encoding(tokens.len() as u64);
-            for token in tokens {
-                metadata.write_bytes(&**token.token_id());
-                metadata.write_u256_be(token.amount());
-            }
-        }
-        if let Some(nfts) = self.allowance.get_nfts() {
-            metadata.write_uint64_special_encoding(nfts.len() as u64);
-            for nft in nfts {
-                metadata.write_bytes(nft.as_slice());
-            }
-        }
-
-        Ok(format!("{}", metadata.serialize()))
-    }
-}
-
-pub async fn read_metadata(mut buffer: SimpleBufferCursor) -> crate::Result<RequestMetadata> {
-    let sender_contract = ContractIdentity::try_from(&mut buffer)?;
-
-    let target_contract = buffer.read_uint32_le();
-    let target_entry_point = buffer.read_uint32_le();
-    let gas_budget = (buffer.read_uint64_special_encoding()? - 1).into();
-
-    let mut params = HashMap::new();
-    let params_len = buffer.read_uint64_special_encoding()?;
-    for _ in 0..params_len {
-        let key_len = buffer.read_uint64_special_encoding()?;
-        let key = buffer.read_bytes(key_len as usize);
-        let entry_len = buffer.read_uint64_special_encoding()?;
-        let entry = buffer.read_bytes(entry_len as usize);
-        params.insert(String::from_utf8(key).unwrap(), entry);
-    }
-
-    let flags = buffer.next()?;
-    let mut allowance = Assets::default();
-    if flags & 0x80 != 0 {
-        // base tokens
-        allowance.set_base_tokens(buffer.read_uint64_special_encoding()?)
-    }
-    if flags & 0x40 != 0 {
-        // native tokens
-        let tokens_len = buffer.read_uint64_special_encoding()?;
-        for _ in 0..tokens_len {
-            let token_id_bytes = buffer.read_bytes(TokenId::LENGTH);
-            let mut fixed_size_array = [0; TokenId::LENGTH];
-            fixed_size_array.copy_from_slice(&token_id_bytes[..TokenId::LENGTH]);
-            let amount = buffer.read_u256_be()?;
-
-            allowance.add_native_token(NativeToken::new(TokenId::new(fixed_size_array), amount)?)
-        }
-    }
-    if flags & 0x20 != 0 {
-        // nfts
-    }
-
-    Ok(RequestMetadata {
-        sender_contract,
-        target_contract,
-        target_entry_point,
-        gas_budget,
-        params,
-        allowance,
-    })
 }
 
 impl packable::Packable for RequestMetadata {
@@ -143,9 +44,23 @@ impl packable::Packable for RequestMetadata {
     type UnpackVisitor = ();
 
     fn pack<P: packable::packer::Packer>(&self, packer: &mut P) -> Result<(), P::Error> {
-        let bytes = self.serialize().unwrap().into_bytes();
-        packer.pack_bytes(bytes)?;
+        self.sender_contract.pack(packer)?;
+
+        self.target_contract.to_le_bytes().pack(packer)?;
+        self.target_entry_point.to_le_bytes().pack(packer)?;
+        Into::<U64Special>::into(*self.gas_budget + 1).pack(packer)?;
+
+        U64Special::pack(&(self.params.len() as u64).into(), packer)?;
+        for entry in &self.params {
+            U64Special::pack(&(entry.0.as_bytes().len() as u64).into(), packer)?;
+            packer.pack_bytes(entry.0)?;
+            U64Special::pack(&(entry.1.len() as u64).into(), packer)?;
+            packer.pack_bytes(entry.1)?;
+        }
+        
+        self.allowance.pack(packer)?;
         Ok(())
+
     }
 
     fn unpack<U: packable::unpacker::Unpacker, const VERIFY: bool>(
@@ -156,10 +71,21 @@ impl packable::Packable for RequestMetadata {
 
         let target_contract = u32::unpack::<_, VERIFY>(unpacker, visitor).coerce()?.to_le();
         let target_entry_point = u32::unpack::<_, VERIFY>(unpacker, visitor).coerce()?.to_le();
-        let gas_budget = U64Special::unpack::<_, VERIFY>(unpacker, visitor)?;
+        let gas_budget = (*U64Special::unpack::<_, VERIFY>(unpacker, visitor)? - 1).into();
 
-        let params = HashMap::new();
-        let allowance = Assets::default();
+        let mut params = HashMap::new();
+        let params_len = *U64Special::unpack::<_, VERIFY>(unpacker, visitor)?;
+        for _ in 0..params_len {
+            let key_len = *U64Special::unpack::<_, VERIFY>(unpacker, visitor)?;
+            let mut key = vec![0u8; key_len.try_into().unwrap()];
+            unpacker.unpack_bytes(&mut key)?;
+            let entry_len = *U64Special::unpack::<_, VERIFY>(unpacker, visitor)?;
+            let mut entry = vec![0u8; entry_len.try_into().unwrap()];
+            unpacker.unpack_bytes(&mut entry)?;
+            params.insert(String::from_utf8(key).unwrap(), entry);
+        }
+
+        let allowance = Assets::unpack::<U, VERIFY>(unpacker, visitor)?;
         Ok(RequestMetadata {
             sender_contract,
             target_contract,

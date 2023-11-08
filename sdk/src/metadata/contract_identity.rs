@@ -6,7 +6,7 @@ use packable::{
     bounded::BoundedU8,
     error::{UnpackError, UnpackErrorExt},
     prefix::BoxedSlicePrefix,
-    Packable,
+    Packable, packer::Packer,
 };
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
@@ -52,9 +52,8 @@ impl packable::Packable for ContractIdentity {
     type UnpackVisitor = ();
 
     fn pack<P: packable::packer::Packer>(&self, packer: &mut P) -> Result<(), P::Error> {
-        self.kind().pack(packer);
-        hex::decode(format!("{:?}", self)).unwrap().pack(packer)?;
-        Ok(())
+        self.kind().pack(packer)?;
+        packer.pack_bytes(hex::decode(format!("{:?}", self)).unwrap())
     }
 
     fn unpack<U: packable::unpacker::Unpacker, const VERIFY: bool>(
@@ -70,7 +69,7 @@ impl packable::Packable for ContractIdentity {
                 // let evm: EvmAddress = EvmAddress::try_from(&bytes)?;
                 Self::EVM(hex::encode(bytes))
             }
-            ISC_KIND => Self::ISC(u32::unpack::<_, VERIFY>(unpacker, visitor).coerce()?),
+            ISC_KIND => Self::ISC(u32::unpack::<_, VERIFY>(unpacker, visitor).coerce()?.to_le()),
             k => return Err(UnpackError::Packable(Error::InvalidContractIdentityKind(k))),
         })
     }

@@ -45,30 +45,15 @@ async fn main() -> Result<()> {
         )
         .unwrap(),
     );
-
-    let metadata_ser = metadata.serialize()?;
-    println!("{:?}", metadata_ser);
-
     let actual_metadata_ser = "00025e4b3ca1e3f423914e0101613503e14c3499349cb8d2fd771e09829883e4ecfae02e6b09c9b6a0fb3c7504b4e2f4e913cac59e0ba840039add645d5df83c294cc230400108e14c3499349cb8d2fd771e09829883e4ecfae02e6b09c9b6a0fb3c7504b4e2f401000000000132";
-    assert_eq!(actual_metadata_ser, metadata_ser);
-
-    let buffer_cursor = SimpleBufferCursor::from(hex::decode(actual_metadata_ser).unwrap());
-    let new_meta = read_metadata(buffer_cursor).await?;
-    println!("{:?}", new_meta);
-
-    assert_eq!(metadata, new_meta);
-
-    // let mut buf = vec![];
-    // buf.resize(metadata_ser.as_bytes().len(), 0);
-    // let mut packer = SlicePacker::new(&mut buf);
 
     let buf = metadata.pack_to_vec();
-    println!("{:?}", String::from_utf8(buf.clone()).unwrap());
+    assert_eq!(hex::decode(actual_metadata_ser).unwrap(), buf);
 
-    // let mut packer = SliceUnpacker::new(&mut buf);
-    let new_meta = RequestMetadata::unpack_unverified(hex::decode(String::from_utf8(buf)?).unwrap()).unwrap();
-    println!("{:?}", new_meta);
+    let new_metadata_ser = hex::encode(buf.clone());
+    assert_eq!(actual_metadata_ser, new_metadata_ser);
 
+    let new_meta = RequestMetadata::unpack_unverified(buf).unwrap();
     assert_eq!(metadata, new_meta);
     Ok(())
 }

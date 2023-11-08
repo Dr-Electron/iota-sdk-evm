@@ -1,13 +1,25 @@
 // Copyright 2023 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use iota_sdk::types::block::output::{NativeToken, NftId};
-use packable::Packable;
+use iota_sdk::{
+    types::block::output::{NativeToken, NftId, TokenId},
+    U256,
+};
+use packable::{
+    error::{UnpackError, UnpackErrorExt},
+    Packable,
+};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+use crate::{U64Special, U256Special};
+
+pub const BASE_TOKEN_FLAG: u8 = 0x80;
+pub const NATIVE_TOKENS_FLAG: u8 = 0x40;
+pub const NFTS_FLAG: u8 = 0x20;
 
 #[derive(Debug, Default, Eq, PartialEq)]
 pub struct Assets {
-    base_tokens: u64,
+    base_tokens: U64Special,
     native_tokens: Option<Vec<NativeToken>>,
     nfts: Option<Vec<NftId>>,
 }
@@ -15,7 +27,7 @@ pub struct Assets {
 impl Assets {
     // Getter for base_tokens
     pub fn get_base_tokens(&self) -> u64 {
-        self.base_tokens
+        *self.base_tokens
     }
 
     // Getter for native_tokens
@@ -30,7 +42,7 @@ impl Assets {
 
     // Check if base_tokens is present
     pub fn has_base_tokens(&self) -> bool {
-        self.base_tokens != 0
+        *self.base_tokens != 0
     }
 
     // Check if native_tokens is present
@@ -45,7 +57,7 @@ impl Assets {
 
     // Setter for base_tokens
     pub fn set_base_tokens(&mut self, value: u64) {
-        self.base_tokens = value;
+        self.base_tokens = value.into();
     }
 
     // Add a single native token
@@ -74,6 +86,85 @@ impl Assets {
     // Replace the nfts vec
     pub fn set_nfts(&mut self, nfts: Vec<NftId>) {
         self.nfts = Some(nfts);
+    }
+
+    pub fn flags(&self) -> u8 {
+        let mut flags: u8 = 0;
+        if self.has_base_tokens() {
+            flags |= BASE_TOKEN_FLAG
+        }
+        if self.has_native_tokens() {
+            flags |= NATIVE_TOKENS_FLAG
+        }
+        if self.has_nfts() {
+            flags |= NFTS_FLAG
+        }
+        flags
+    }
+}
+
+impl packable::Packable for Assets {
+    type UnpackError = crate::Error;
+
+    type UnpackVisitor = ();
+
+    fn pack<P: packable::packer::Packer>(&self, packer: &mut P) -> Result<(), P::Error> {
+        self.flags().pack(packer)?;
+        if self.has_base_tokens() {
+            U64Special::pack(&self.base_tokens, packer)?;
+        }
+        if let Some(tokens) = self.get_native_tokens() {
+            U64Special::pack(&(tokens.len() as u64).into(), packer)?;
+            for token in tokens {
+                token.token_id().pack(packer)?;
+                U256Special::from(token.amount()).pack(packer)?;
+            }
+        }
+        if let Some(nfts) = self.get_nfts() {
+            U64Special::pack(&(nfts.len() as u64).into(), packer)?;
+            for nft in nfts {
+                nft.pack(packer)?;
+            }
+        }
+        Ok(())
+    }
+
+    fn unpack<U: packable::unpacker::Unpacker, const VERIFY: bool>(
+        unpacker: &mut U,
+        visitor: &Self::UnpackVisitor,
+    ) -> Result<Self, packable::error::UnpackError<Self::UnpackError, U::Error>> {
+        let flags = u8::unpack::<_, VERIFY>(unpacker, &()).coerce()?;
+        let mut assets = Assets::default();
+        if flags & BASE_TOKEN_FLAG != 0 {
+            // base tokens
+            let tokens = U64Special::unpack::<_, VERIFY>(unpacker, visitor)?;
+            assets.base_tokens = tokens;
+        }
+        if flags & NATIVE_TOKENS_FLAG != 0 {
+            // native tokens
+            let tokens_len = *U64Special::unpack::<_, VERIFY>(unpacker, visitor)?;
+            for _ in 0..tokens_len {
+                let token_id =
+                    TokenId::unpack::<_, VERIFY>(unpacker, visitor).map_packable_err(|e| crate::Error::Placeholder)?;
+                let amount =
+                    U256Special::unpack::<_, VERIFY>(unpacker, visitor).map_packable_err(|e| crate::Error::Placeholder)?;
+
+                assets.add_native_token(
+                    NativeToken::new(token_id, *amount).map_err(|e| UnpackError::Packable(crate::Error::Sdk(e)))?,
+                )
+            }
+        }
+        if flags & NFTS_FLAG != 0 {
+            // nfts
+            let nfts_len = *U64Special::unpack::<_, VERIFY>(unpacker, visitor)?;
+            for _ in 0..nfts_len {
+                let nft =
+                    NftId::unpack::<_, VERIFY>(unpacker, visitor).map_packable_err(|e| crate::Error::Placeholder)?;
+                assets.add_nft(nft);
+            }
+        }
+
+        Ok(assets)
     }
 }
 

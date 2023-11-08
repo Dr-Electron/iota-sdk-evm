@@ -37,12 +37,10 @@ impl packable::Packable for U64Special {
         unpacker: &mut U,
         visitor: &Self::UnpackVisitor,
     ) -> Result<Self, packable::error::UnpackError<Self::UnpackError, U::Error>> {
-        let byte_stream = || {
-            u8::unpack::<_, VERIFY>(unpacker, visitor).map_err(|e| crate::error::Error::Placeholder)
-        };
+        let byte_stream = || u8::unpack::<_, VERIFY>(unpacker, visitor).map_err(|e| crate::error::Error::Placeholder);
 
         Ok(U64Special(
-            size64_decode(byte_stream).map_err(|e| UnpackError::Packable(e))? -1,
+            size64_decode(byte_stream).map_err(|e| UnpackError::Packable(e))?,
         ))
     }
 }
