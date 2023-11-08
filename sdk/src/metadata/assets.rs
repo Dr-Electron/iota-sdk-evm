@@ -1,17 +1,11 @@
 // Copyright 2023 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use iota_sdk::{
-    types::block::output::{NativeToken, NftId, TokenId},
-    U256,
-};
-use packable::{
-    error::{UnpackError, UnpackErrorExt},
-    Packable,
-};
+use iota_sdk::types::block::output::{NativeToken, NftId, TokenId};
+use packable::error::{UnpackError, UnpackErrorExt};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-use crate::{U64Special, U256Special};
+use crate::{U256Special, U64Special};
 
 pub const BASE_TOKEN_FLAG: u8 = 0x80;
 pub const NATIVE_TOKENS_FLAG: u8 = 0x40;
@@ -146,12 +140,11 @@ impl packable::Packable for Assets {
             for _ in 0..tokens_len {
                 let token_id =
                     TokenId::unpack::<_, VERIFY>(unpacker, visitor).map_packable_err(|e| crate::Error::Placeholder)?;
-                let amount =
-                    U256Special::unpack::<_, VERIFY>(unpacker, visitor).map_packable_err(|e| crate::Error::Placeholder)?;
+                let amount = U256Special::unpack::<_, VERIFY>(unpacker, visitor)
+                    .map_packable_err(|e| crate::Error::Placeholder)?;
 
-                assets.add_native_token(
-                    NativeToken::new(token_id, *amount).map_err(|e| UnpackError::Packable(crate::Error::Sdk(e)))?,
-                )
+                assets
+                    .add_native_token(NativeToken::new(token_id, *amount).map_err(|e| UnpackError::Packable(e.into()))?)
             }
         }
         if flags & NFTS_FLAG != 0 {

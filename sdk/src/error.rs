@@ -5,8 +5,9 @@
 
 use std::{convert::Infallible, fmt::Debug, string::FromUtf8Error};
 
-use iota_sdk::types::block::Error as SdkError;
-use packable::Packable;
+use iota_sdk::{
+    client::Error as SdkClientError, types::block::Error as SdkBlockError, wallet::Error as SdkWalletError,
+};
 use serde::{
     ser::{SerializeMap, Serializer},
     Serialize,
@@ -28,7 +29,10 @@ pub enum Error {
     InvalidType(u8, &'static str),
 
     #[error("iota Sdk error: {0}")]
-    Sdk(SdkError),
+    SdkClient(SdkClientError),
+
+    #[error("iota Wallet error: {0}")]
+    SdkWallet(SdkWalletError),
 
     #[error("Invalid contract identity kindfound: {0}")]
     InvalidContractIdentityKind(u8),
@@ -46,12 +50,21 @@ impl From<Infallible> for Error {
     }
 }
 
-impl From<SdkError> for Error {
-    fn from(value: SdkError) -> Self {
-        Error::Sdk(value)
+impl From<SdkBlockError> for Error {
+    fn from(value: SdkBlockError) -> Self {
+        Error::SdkClient(value.into())
     }
 }
-
+impl From<SdkClientError> for Error {
+    fn from(value: SdkClientError) -> Self {
+        Error::SdkClient(value)
+    }
+}
+impl From<SdkWalletError> for Error {
+    fn from(value: SdkWalletError) -> Self {
+        Error::SdkWallet(value)
+    }
+}
 impl From<FromUtf8Error> for Error {
     fn from(error: FromUtf8Error) -> Self {
         Error::IO {

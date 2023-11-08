@@ -1,16 +1,10 @@
 // Copyright 2023 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use crypto::signatures::secp256k1_ecdsa::EvmAddress;
-use packable::{
-    bounded::BoundedU8,
-    error::{UnpackError, UnpackErrorExt},
-    prefix::BoxedSlicePrefix,
-    Packable, packer::Packer,
-};
+use packable::error::{UnpackError, UnpackErrorExt};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-use crate::{Error, SimpleBufferCursor};
+use crate::Error;
 
 pub const NULL_KIND: u8 = 0;
 pub const EVM_KIND: u8 = 1;
@@ -35,15 +29,6 @@ impl ContractIdentity {
             Self::ISC(_) => ISC_KIND,
         }
     }
-
-    pub fn from1(buffer: &mut SimpleBufferCursor) -> crate::Result<Self> {
-        match buffer.next()? {
-            NULL_KIND => Ok(ContractIdentity::Null),
-            EVM_KIND => Ok(ContractIdentity::Null),
-            ISC_KIND => Ok(ContractIdentity::Null),
-            t => Err(Error::InvalidType(t, "ContractIdentity")),
-        }
-    }
 }
 
 impl packable::Packable for ContractIdentity {
@@ -63,7 +48,6 @@ impl packable::Packable for ContractIdentity {
         Ok(match u8::unpack::<_, VERIFY>(unpacker, &()).coerce()? {
             NULL_KIND => Self::Null,
             EVM_KIND => {
-                let addr: &str = "";
                 let mut bytes = vec![0u8; 20];
                 unpacker.unpack_bytes(&mut bytes)?;
                 // let evm: EvmAddress = EvmAddress::try_from(&bytes)?;
@@ -72,13 +56,6 @@ impl packable::Packable for ContractIdentity {
             ISC_KIND => Self::ISC(u32::unpack::<_, VERIFY>(unpacker, visitor).coerce()?.to_le()),
             k => return Err(UnpackError::Packable(Error::InvalidContractIdentityKind(k))),
         })
-    }
-}
-
-impl TryFrom<&mut SimpleBufferCursor> for ContractIdentity {
-    type Error = Error;
-    fn try_from(value: &mut SimpleBufferCursor) -> crate::Result<Self> {
-        ContractIdentity::from1(value)
     }
 }
 

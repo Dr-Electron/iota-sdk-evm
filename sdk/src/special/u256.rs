@@ -4,7 +4,7 @@
 use core::ops::Deref;
 
 use iota_sdk::U256;
-use packable::error::{UnpackErrorExt};
+use packable::error::UnpackErrorExt;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Default, Clone, Eq, PartialEq, PartialOrd, Hash, Serialize, Deserialize)]
