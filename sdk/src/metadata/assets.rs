@@ -5,7 +5,7 @@ use iota_sdk::types::block::output::{NativeToken, NftId};
 use packable::Packable;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-#[derive(Debug, Default, Eq, PartialEq, Packable)]
+#[derive(Debug, Default, Eq, PartialEq)]
 pub struct Assets {
     base_tokens: u64,
     native_tokens: Option<Vec<NativeToken>>,

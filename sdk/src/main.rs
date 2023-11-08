@@ -6,16 +6,19 @@ use std::{
 };
 
 use iota_sdk::types::block::output::{NativeToken, TokenId};
+use packable::{packer::SlicePacker, unpacker::SliceUnpacker, Packable, PackableExt};
 use serde;
 use serde_json;
 
 mod buffer;
 mod error;
 mod metadata;
+mod special;
 
 pub use buffer::*;
 pub use error::*;
 pub use metadata::*;
+pub use special::*;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -55,5 +58,17 @@ async fn main() -> Result<()> {
 
     assert_eq!(metadata, new_meta);
 
+    // let mut buf = vec![];
+    // buf.resize(metadata_ser.as_bytes().len(), 0);
+    // let mut packer = SlicePacker::new(&mut buf);
+
+    let buf = metadata.pack_to_vec();
+    println!("{:?}", String::from_utf8(buf.clone()).unwrap());
+
+    // let mut packer = SliceUnpacker::new(&mut buf);
+    let new_meta = RequestMetadata::unpack_unverified(hex::decode(String::from_utf8(buf)?).unwrap()).unwrap();
+    println!("{:?}", new_meta);
+
+    assert_eq!(metadata, new_meta);
     Ok(())
 }

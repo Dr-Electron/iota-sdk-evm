@@ -5,6 +5,7 @@ use core::ops::Deref;
 use std::convert::TryInto;
 
 use iota_sdk::U256;
+use packable::packer::Packer;
 
 use crate::error::{Error, Result};
 
@@ -158,6 +159,9 @@ impl SimpleBufferCursor {
             message: "size64 overflow",
         })
     }
+    pub fn total_len(&self) -> usize {
+        self.buffer.len()
+    }
 }
 
 impl Deref for SimpleBufferCursor {
@@ -173,7 +177,7 @@ impl Deref for SimpleBufferCursor {
 /// by setting the 0x80 bit. Since most numbers are small, this will result in
 /// significant storage savings, with values < 128 occupying only a single byte,
 /// and values < 16384 only 2 bytes.
-fn size64_encode(mut s: u64) -> Vec<u8> {
+pub fn size64_encode(mut s: u64) -> Vec<u8> {
     let mut result = Vec::new();
     loop {
         let mut byte = (s & 0x7F) as u8;
@@ -187,4 +191,24 @@ fn size64_encode(mut s: u64) -> Vec<u8> {
         }
     }
     result
+}
+
+pub fn size64_decode<R>(mut read_byte: R) -> Result<u64>
+where
+    R: FnMut() -> Result<u8>,
+{
+    let mut value: u64 = 0;
+    for shift in (0..64).step_by(7) {
+        let mut byte = read_byte()?;
+        let is_last_byte = byte & 0x80 == 0;
+        byte &= 0x7F;
+        value |= (byte as u64) << shift;
+        if is_last_byte {
+            return Ok(value);
+        }
+    }
+    Err(Error::IO {
+        expected: std::io::ErrorKind::Other,
+        message: "size64 overflow",
+    })
 }

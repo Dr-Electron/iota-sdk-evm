@@ -5,16 +5,17 @@ use std::collections::HashMap;
 
 use crypto::hashes::{blake2b::Blake2b256, Digest};
 use iota_sdk::types::block::output::{NativeToken, TokenId};
+use packable::error::{UnpackError, UnpackErrorExt};
 use serde::{Deserialize, Serialize};
 
-use crate::{Assets, ContractIdentity, Result, SimpleBufferCursor};
+use crate::{Assets, ContractIdentity, SimpleBufferCursor, U64Special};
 
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub struct RequestMetadata {
     sender_contract: ContractIdentity,
     target_contract: u32,
     target_entry_point: u32,
-    gas_budget: u64,
+    gas_budget: U64Special,
     pub params: HashMap<String, Vec<u8>>,
     pub allowance: Assets,
 }
@@ -32,17 +33,17 @@ impl RequestMetadata {
             target_entry_point: hname(&target_entry_point), // 603251617,
             params: Default::default(),
             allowance: Assets::default(),
-            gas_budget,
+            gas_budget: gas_budget.into(),
         }
     }
 
-    pub fn serialize(&self) -> Result<String> {
+    pub fn serialize(&self) -> crate::Result<String> {
         let mut metadata = SimpleBufferCursor::default();
         metadata.write_uint8(self.sender_contract.kind());
         metadata.write_bytes(hex::decode(format!("{:?}", self.sender_contract)).unwrap().as_slice());
         metadata.write_uint32_le(self.target_contract);
         metadata.write_uint32_le(self.target_entry_point);
-        metadata.write_uint64_special_encoding(self.gas_budget + 1);
+        metadata.write_uint64_special_encoding(*self.gas_budget + 1);
 
         // params
         metadata.write_uint64_special_encoding(self.params.len() as u64);
@@ -87,12 +88,12 @@ impl RequestMetadata {
     }
 }
 
-pub async fn read_metadata(mut buffer: SimpleBufferCursor) -> Result<RequestMetadata> {
+pub async fn read_metadata(mut buffer: SimpleBufferCursor) -> crate::Result<RequestMetadata> {
     let sender_contract = ContractIdentity::try_from(&mut buffer)?;
 
     let target_contract = buffer.read_uint32_le();
     let target_entry_point = buffer.read_uint32_le();
-    let gas_budget = buffer.read_uint64_special_encoding()? - 1;
+    let gas_budget = (buffer.read_uint64_special_encoding()? - 1).into();
 
     let mut params = HashMap::new();
     let params_len = buffer.read_uint64_special_encoding()?;
@@ -134,6 +135,40 @@ pub async fn read_metadata(mut buffer: SimpleBufferCursor) -> Result<RequestMeta
         params,
         allowance,
     })
+}
+
+impl packable::Packable for RequestMetadata {
+    type UnpackError = crate::Error;
+
+    type UnpackVisitor = ();
+
+    fn pack<P: packable::packer::Packer>(&self, packer: &mut P) -> Result<(), P::Error> {
+        let bytes = self.serialize().unwrap().into_bytes();
+        packer.pack_bytes(bytes)?;
+        Ok(())
+    }
+
+    fn unpack<U: packable::unpacker::Unpacker, const VERIFY: bool>(
+        unpacker: &mut U,
+        visitor: &Self::UnpackVisitor,
+    ) -> Result<Self, packable::error::UnpackError<Self::UnpackError, U::Error>> {
+        let sender_contract = ContractIdentity::unpack::<U, VERIFY>(unpacker, visitor)?;
+
+        let target_contract = u32::unpack::<_, VERIFY>(unpacker, visitor).coerce()?.to_le();
+        let target_entry_point = u32::unpack::<_, VERIFY>(unpacker, visitor).coerce()?.to_le();
+        let gas_budget = U64Special::unpack::<_, VERIFY>(unpacker, visitor)?;
+
+        let params = HashMap::new();
+        let allowance = Assets::default();
+        Ok(RequestMetadata {
+            sender_contract,
+            target_contract,
+            target_entry_point,
+            gas_budget,
+            params,
+            allowance,
+        })
+    }
 }
 
 /// Takes a chain ID and an address as input, converts them from

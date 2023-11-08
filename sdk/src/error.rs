@@ -3,9 +3,10 @@
 
 //! Error handling in iota-sdk-evm crate.
 
-use std::fmt::Debug;
+use std::{convert::Infallible, fmt::Debug, string::FromUtf8Error};
 
 use iota_sdk::types::block::Error as SdkError;
+use packable::Packable;
 use serde::{
     ser::{SerializeMap, Serializer},
     Serialize,
@@ -29,13 +30,34 @@ pub enum Error {
     #[error("iota Sdk error: {0}")]
     Sdk(SdkError),
 
+    #[error("Invalid contract identity kindfound: {0}")]
+    InvalidContractIdentityKind(u8),
+
+    #[error("packable error: {0}")]
+    Packable(packable::error::UnexpectedEOF),
+
     #[error("just a placeholder error")]
     Placeholder,
+}
+
+impl From<Infallible> for Error {
+    fn from(error: Infallible) -> Self {
+        match error {}
+    }
 }
 
 impl From<SdkError> for Error {
     fn from(value: SdkError) -> Self {
         Error::Sdk(value)
+    }
+}
+
+impl From<FromUtf8Error> for Error {
+    fn from(error: FromUtf8Error) -> Self {
+        Error::IO {
+            expected: std::io::ErrorKind::InvalidData, // or any appropriate error kind
+            message: "invalid UTF-8 data",
+        }
     }
 }
 

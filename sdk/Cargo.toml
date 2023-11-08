@@ -13,7 +13,7 @@ lazy_static = { version = "1.4" }
 rand = { version = "0.8", features = ["small_rng"] }
 serde = "1.0"
 serde_json = "1.0"
-packable = "0.7.0"
+packable = { version = "0.8.3", features = [ "usize", "io", "serde", "std", "primitive-types"] }
 hex = "0.4.3"
 thiserror = { version = "1.0.40" }
 iota-crypto = { version = "0.23.0", default-features = false, features = [
