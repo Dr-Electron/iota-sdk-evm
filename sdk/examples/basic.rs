@@ -130,9 +130,7 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-/// 0x00025e4b3c410fcc9dc096b10200809fb0b378
-/// 0x 01 02 5e 4b 3c 00 00 00 00 00 00 00 00 01 00 00
-fn deposit(amount: u64) -> RequestMetadata {
+fn withdraw(amount: u64) -> RequestMetadata {
     let mut metadata = RequestMetadata::new(
         ContractIdentity::Null,
         ACCOUNTS.to_string(),

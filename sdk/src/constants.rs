@@ -12,3 +12,5 @@ pub const ISC_ERC721_ADDRESS: &'static str = "0x10740300000000000000000000000000
 
 // The base chain address from the testnet to which metadata tx should be send
 pub const TESTNET_CHAIN_ADDRESS: &'static str = "rms1ppp00k5mmd2m8my8ukkp58nd3rskw6rx8l09aj35984k74uuc5u2cywn3ex";
+
+pub const MIN_GAS_FEE: u64 = 100;
