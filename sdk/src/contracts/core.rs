@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use iota_sdk::types::block::output::{NftId, TokenScheme};
-use packable::prefix::BoxedSlicePrefix;
 
 use crate::{AgentId, Gas, U256Special};
 

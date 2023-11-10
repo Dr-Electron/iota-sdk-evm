@@ -140,6 +140,30 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn serde() {
+        assert_eq!(
+            serde_json::from_str::<serde_json::Value>(&serde_json::to_string(&get_metadata()).unwrap()).unwrap(),
+            serde_json::json!({
+                "sender_contract": "00",
+                "target_contract": 1011572226,
+                "target_entry_point": 603251617,
+                "gas_budget": 10000,
+                "params": {
+                    "a": [3,225,76,52,153,52,156,184,210,253,119,30,9,130,152,131,228,236,250,224,46,107,9,201,182,160,251,60,117,4,180,226,244,233,19,202,197,158,11,168,64,3,154,221,100,93,93,248,60,41,76,194,48]
+                },
+                "allowance": {
+                    "base_tokens": 0,
+                    "native_tokens": [{
+                        "id": "0x08e14c3499349cb8d2fd771e09829883e4ecfae02e6b09c9b6a0fb3c7504b4e2f40100000000",
+                        "amount": "0x32"
+                    }],
+                    "nfts": serde_json::Value::Null
+                }
+            })
+        )
+    }
+
+    #[tokio::test]
     async fn pack() {
         let metadata = get_metadata();
         let buf = metadata.pack_to_vec();

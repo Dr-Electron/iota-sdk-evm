@@ -2,10 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crypto::signatures::secp256k1_ecdsa::EvmAddress;
-use packable::error::{UnpackError, UnpackErrorExt};
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use packable::{
+    error::{UnpackError, UnpackErrorExt},
+    PackableExt,
+};
+use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
 
-use crate::{AgentId, Error};
+use crate::AgentId;
 
 pub const NULL_KIND: u8 = 0;
 pub const ISC_KIND: u8 = 1;
@@ -37,7 +40,7 @@ impl ContractIdentity {
 }
 
 impl packable::Packable for ContractIdentity {
-    type UnpackError = Error;
+    type UnpackError = crate::Error;
 
     type UnpackVisitor = ();
 
@@ -65,7 +68,7 @@ impl packable::Packable for ContractIdentity {
                 Self::EVM(evm)
             }
             ETHEREUM_ADDRESS_KIND => Self::ETH(AgentId::unpack::<_, VERIFY>(unpacker, visitor)?), /* TODO split so doesnt need 3 */
-            k => return Err(UnpackError::Packable(Error::InvalidContractIdentityKind(k))),
+            k => return Err(UnpackError::Packable(crate::Error::InvalidContractIdentityKind(k))),
         })
     }
 }
@@ -92,8 +95,7 @@ impl Serialize for ContractIdentity {
     where
         S: Serializer,
     {
-        let ser = format!("{:0>2}{:?}", self.kind(), self);
-        s.serialize_str(&ser)
+        s.serialize_str(&hex::encode(self.pack_to_vec()))
     }
 }
 
@@ -102,7 +104,8 @@ impl<'de> Deserialize<'de> for ContractIdentity {
     where
         D: Deserializer<'de>,
     {
-        Ok(ContractIdentity::default())
+        let s: String = Deserialize::deserialize(deserializer)?;
+        ContractIdentity::unpack_unverified(hex::decode(s).unwrap()).map_err(|err| D::Error::custom(format!("{err}")))
     }
 }
 
