@@ -9,9 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{Assets, ContractIdentity, U64Special};
 
-///
 /// https://wiki.iota.org/wasp-evm/reference/core-contracts/overview/
-///
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub struct RequestMetadata {
     sender_contract: ContractIdentity,
@@ -25,14 +23,14 @@ pub struct RequestMetadata {
 impl RequestMetadata {
     pub fn new(
         sender_contract: ContractIdentity,
-        target_contract: String,
-        target_entry_point: String,
+        target_contract: impl Into<Option<String>>,
+        target_entry_point: impl Into<Option<String>>,
         gas_budget: u64,
     ) -> Self {
         RequestMetadata {
-            sender_contract: sender_contract,
-            target_contract: hname(&target_contract),       // 1011572226,
-            target_entry_point: hname(&target_entry_point), // 603251617,
+            sender_contract,
+            target_contract: target_contract.into().map_or(0, |tc| hname(&tc)),
+            target_entry_point: target_entry_point.into().map_or(0, |tep| hname(&tep)),
             params: Default::default(),
             allowance: Assets::default(),
             gas_budget: gas_budget.into(),
@@ -100,6 +98,7 @@ impl packable::Packable for RequestMetadata {
 
 /// Takes a chain ID and an address as input, converts them from
 /// hexadecimal to bytes, and returns the concatenated bytes prepended with a 3 signifying the type.
+/// The AgentID key in the parameters has to be `a`.
 ///
 /// Arguments:
 ///
@@ -129,9 +128,17 @@ mod tests {
     use iota_sdk::types::block::output::{NativeToken, TokenId};
     use packable::PackableExt;
 
-    use crate::{ethereum_agent_id, ContractIdentity, RequestMetadata};
+    use crate::{ethereum_agent_id, hname, ContractIdentity, RequestMetadata, ACCOUNTS};
 
     const SER: &str = "00025e4b3ca1e3f423914e0101613503e14c3499349cb8d2fd771e09829883e4ecfae02e6b09c9b6a0fb3c7504b4e2f4e913cac59e0ba840039add645d5df83c294cc230400108e14c3499349cb8d2fd771e09829883e4ecfae02e6b09c9b6a0fb3c7504b4e2f401000000000132";
+    const SER_ISC: &str = "01025e4b3c0000000000000000010000";
+
+    #[tokio::test]
+    async fn hnames() {
+        assert_eq!(hname(ACCOUNTS), 1011572226);
+        assert_eq!(hname("transferAllowanceTo"), 603251617);
+    }
+
     #[tokio::test]
     async fn pack() {
         let metadata = get_metadata();
@@ -140,16 +147,26 @@ mod tests {
     }
 
     #[tokio::test]
+
     async fn unpack() {
         let new_meta = RequestMetadata::unpack_unverified(hex::decode(SER).unwrap()).unwrap();
         assert_eq!(get_metadata(), new_meta);
     }
 
+    #[tokio::test]
+    async fn unpack_ics() {
+        let new_meta = RequestMetadata::unpack_unverified(hex::decode(SER_ISC).unwrap()).unwrap();
+        assert_eq!(
+            RequestMetadata::new(ContractIdentity::ISC(hname(ACCOUNTS)), None, None, 0),
+            new_meta
+        );
+    }
+
     fn get_metadata() -> RequestMetadata {
         let mut metadata = RequestMetadata::new(
             ContractIdentity::Null,
-            "accounts".to_string(),            // 1011572226,
-            "transferAllowanceTo".to_string(), // 603251617,
+            ACCOUNTS.to_string(),
+            "transferAllowanceTo".to_string(),
             10000,
         );
         metadata.params.insert(

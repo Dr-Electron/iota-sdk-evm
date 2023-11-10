@@ -3,7 +3,7 @@
 
 use core::ops::Deref;
 
-use packable::error::UnpackError;
+use packable::error::{UnpackError, UnpackErrorExt};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Default, Clone, Eq, PartialEq, PartialOrd, Hash, Serialize, Deserialize)]
@@ -35,11 +35,15 @@ impl packable::Packable for U64Special {
         unpacker: &mut U,
         visitor: &Self::UnpackVisitor,
     ) -> Result<Self, packable::error::UnpackError<Self::UnpackError, U::Error>> {
-        let byte_stream = || u8::unpack::<_, VERIFY>(unpacker, visitor).map_err(|e| crate::error::Error::Placeholder);
+        let byte_stream = || {
+            let err = u8::unpack::<_, VERIFY>(unpacker, visitor).coerce();
+            err.map_err(|_: UnpackError<Self::UnpackError, U::Error>| crate::Error::IO {
+                expected: std::io::ErrorKind::InvalidData,
+                message: "failed to unpack a byte",
+            })
+        };
 
-        Ok(U64Special(
-            size64_decode(byte_stream).map_err(|e| UnpackError::Packable(e))?,
-        ))
+        Ok(U64Special(size64_decode(byte_stream).map_err(UnpackError::Packable)?))
     }
 }
 

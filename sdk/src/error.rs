@@ -5,9 +5,7 @@
 
 use std::{convert::Infallible, fmt::Debug, string::FromUtf8Error};
 
-use iota_sdk::{
-    client::Error as SdkClientError, types::block::Error as SdkBlockError, wallet::Error as SdkWalletError,
-};
+use iota_sdk::{client::Error as ClientError, types::block::Error as SdkBlockError, wallet::Error as WalletError};
 use serde::{
     ser::{SerializeMap, Serializer},
     Serialize,
@@ -25,52 +23,23 @@ pub enum Error {
         expected: std::io::ErrorKind,
         message: &'static str,
     },
-    #[error("Type {0} not valid for {1}")]
-    InvalidType(u8, &'static str),
+    #[error("{0}")]
+    SdkBlock(#[from] SdkBlockError),
+    #[error("{0}")]
+    WalletError(#[from] WalletError),
+    #[error("{0}")]
+    ClientError(#[from] ClientError),
 
-    #[error("iota Sdk error: {0}")]
-    SdkClient(SdkClientError),
-
-    #[error("iota Wallet error: {0}")]
-    SdkWallet(SdkWalletError),
-
-    #[error("Invalid contract identity kindfound: {0}")]
+    #[error("Invalid contract identity kind found: {0}")]
     InvalidContractIdentityKind(u8),
 
-    #[error("packable error: {0}")]
-    Packable(packable::error::UnexpectedEOF),
-
-    #[error("just a placeholder error")]
-    Placeholder,
+    #[error("{0}")]
+    Utf8(#[from] FromUtf8Error),
 }
 
 impl From<Infallible> for Error {
     fn from(error: Infallible) -> Self {
         match error {}
-    }
-}
-
-impl From<SdkBlockError> for Error {
-    fn from(value: SdkBlockError) -> Self {
-        Error::SdkClient(value.into())
-    }
-}
-impl From<SdkClientError> for Error {
-    fn from(value: SdkClientError) -> Self {
-        Error::SdkClient(value)
-    }
-}
-impl From<SdkWalletError> for Error {
-    fn from(value: SdkWalletError) -> Self {
-        Error::SdkWallet(value)
-    }
-}
-impl From<FromUtf8Error> for Error {
-    fn from(error: FromUtf8Error) -> Self {
-        Error::IO {
-            expected: std::io::ErrorKind::InvalidData, // or any appropriate error kind
-            message: "invalid UTF-8 data",
-        }
     }
 }
 

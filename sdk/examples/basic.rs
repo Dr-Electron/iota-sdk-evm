@@ -18,16 +18,22 @@ use iota_sdk::{
     },
     crypto::keys::bip39::Mnemonic,
     types::{
-        block::output::{
-            feature::MetadataFeature, unlock_condition::AddressUnlockCondition, BasicOutputBuilder, Feature,
-            NativeToken, TokenId,
+        block::{
+            address::{Address, Bech32Address, Ed25519Address},
+            output::{
+                feature::{MetadataFeature, SenderFeature},
+                unlock_condition::AddressUnlockCondition,
+                BasicOutputBuilder, Feature, NativeToken, TokenId,
+            },
         },
         ValidationParams,
     },
     wallet::ClientOptions,
     Wallet,
 };
-use iota_sdk_evm::{ethereum_agent_id, ContractIdentity, Error, RequestMetadata, Result};
+use iota_sdk_evm::{
+    ethereum_agent_id, AgentId, ContractIdentity, Error, RequestMetadata, Result, ACCOUNTS, TESTNET_CHAIN_ADDRESS,
+};
 use packable::PackableExt;
 
 #[tokio::main]
@@ -39,18 +45,20 @@ async fn main() -> Result<()> {
     let secret_manager = StrongholdSecretManager::builder()
         .password(std::env::var("STRONGHOLD_PASSWORD").unwrap())
         .build(std::env::var("STRONGHOLD_SNAPSHOT_PATH").unwrap())
-        .map_err(|e| crate::Error::SdkWallet(e.into()))?;
+        .unwrap();
 
     // Only required the first time, can also be generated with `manager.generate_mnemonic()?`
     let mnemonic = Mnemonic::from(std::env::var("MNEMONIC").unwrap());
 
     // The mnemonic only needs to be stored the first time
-    /*secret_manager
-        .store_mnemonic(mnemonic)
-        .await
-        .map_err(|e| crate::Error::SdkWallet(e.into()))?;*/
+    // secret_manager
+    // .store_mnemonic(mnemonic)
+    // .await
+    // .map_err(|e| crate::Error::SdkWallet(e.into()))?;
 
-    let client_options = ClientOptions::new().with_node(&std::env::var("NODE_URL").unwrap())?;
+    let client_options = ClientOptions::new()
+        .with_node(&std::env::var("NODE_URL").unwrap())
+        .unwrap();
 
     // Create the wallet
     let wallet = Wallet::builder()
@@ -63,9 +71,11 @@ async fn main() -> Result<()> {
 
     // Get or create a new account
     let account = wallet.get_or_create_account("Alice").await?;
+    let account_addrs = account.generate_ed25519_addresses(2, None).await?;
     let balance = account.sync(None).await?;
-    let account_addr = &account.generate_ed25519_addresses(1, None).await?[0];
+    let account_addr = &account_addrs[0];
     println!("Using addr: '{:?}'", account_addr.address());
+    println!("Available balance: '{:?}'", balance);
 
     let protocol_parameters = account.client().get_protocol_parameters().await?;
     println!(
@@ -73,22 +83,25 @@ async fn main() -> Result<()> {
         protocol_parameters.bech32_hrp().to_string()
     );
 
-    //let meta = "00025e4b3ca1e3f42300010161350342f7da9bdb55b3ec87e5ac1a1e6d88e16768663fde5eca3429eb6f579cc538acb67c72b84e8bced681478241686d30c2a1ddd8d680f0f3d62f";
-    //let new_meta = RequestMetadata::unpack_unverified(hex::decode(meta).unwrap()).unwrap();
-    //println!("{:?}", new_meta);
-
     if balance.base_coin().available() > 0 {
         let protocol_parameters = account.client().get_protocol_parameters().await?;
-        let metadata = format!("0x{}", hex::encode(get_metadata().pack_to_vec()));
 
-        let outputs = [BasicOutputBuilder::new_with_amount(1)
-            .with_minimum_storage_deposit(*protocol_parameters.rent_structure())
-            .add_unlock_condition(AddressUnlockCondition::from(account_addr.address().inner().clone()))
-            .with_features([Feature::from(MetadataFeature::new(get_metadata().pack_to_vec())?)])
-            .finish_with_params(ValidationParams::default().with_protocol_parameters(protocol_parameters.clone()))
+        println!("Available balance: '{:?}'", balance.base_coin().available() / 2);
+
+        let to_send = balance.base_coin().available() / 2;
+        let metadata = deposit(to_send);
+
+        let outputs = [BasicOutputBuilder::new_with_amount(to_send)
+            .add_unlock_condition(AddressUnlockCondition::from(
+                Bech32Address::from_str(TESTNET_CHAIN_ADDRESS)?.inner().clone(),
+            ))
+            .with_features([
+                Feature::from(MetadataFeature::new(metadata.pack_to_vec())?),
+                Feature::from(SenderFeature::new(account_addr.address().clone())),
+            ])
+            .finish()
             .unwrap()
             .into()];
-
 
         let transaction = account.send_outputs(outputs, None).await?;
         println!(
@@ -109,33 +122,49 @@ async fn main() -> Result<()> {
         );
     } else {
         println!("no available balance. top up at '{:?}'", account_addr.address());
-        iota_sdk::client::request_funds_from_faucet(&std::env::var("FAUCET_URL").unwrap(), account_addr.address()).await?;
+        iota_sdk::client::request_funds_from_faucet(&std::env::var("FAUCET_URL").unwrap(), account_addr.address())
+            .await
+            .unwrap();
     }
 
     Ok(())
 }
 
-fn get_metadata() -> RequestMetadata {
+/// 0x00025e4b3c410fcc9dc096b10200809fb0b378
+/// 0x 01 02 5e 4b 3c 00 00 00 00 00 00 00 00 01 00 00
+fn deposit(amount: u64) -> RequestMetadata {
     let mut metadata = RequestMetadata::new(
         ContractIdentity::Null,
-        "accounts".to_string(),            // 1011572226,
+        ACCOUNTS.to_string(),
+        "withdraw".to_string(),
+        4999999,
+    );
+    metadata.allowance.set_base_tokens(amount);
+    metadata
+}
+
+fn get_metadata(amount: u64) -> RequestMetadata {
+    let mut metadata = RequestMetadata::new(
+        ContractIdentity::Null,
+        ACCOUNTS.to_string(),              // 1011572226,
         "transferAllowanceTo".to_string(), // 603251617,
-        10000,
+        4999999,
     );
     metadata.params.insert(
         "a".to_string(),
         ethereum_agent_id(
-            "e14c3499349cb8d2fd771e09829883e4ecfae02e6b09c9b6a0fb3c7504b4e2f4".to_string(),
+            "42f7da9bdb55b3ec87e5ac1a1e6d88e16768663fde5eca3429eb6f579cc538ac".to_string(),
             "E913CAc59E0bA840039aDD645D5df83C294CC230".to_string(),
         ),
     );
-    metadata.allowance.add_native_token(
-        NativeToken::new(
-            TokenId::from_str("0x08e14c3499349cb8d2fd771e09829883e4ecfae02e6b09c9b6a0fb3c7504b4e2f40100000000")
-                .unwrap(),
-            50,
-        )
-        .unwrap(),
-    );
+    metadata.allowance.set_base_tokens(amount - 4999999);
+    // metadata.allowance.add_native_token(
+    // NativeToken::new(
+    // TokenId::from_str("0x08e14c3499349cb8d2fd771e09829883e4ecfae02e6b09c9b6a0fb3c7504b4e2f40100000000")
+    // .unwrap(),
+    // 50,
+    // )
+    // .unwrap(),
+    // );
     metadata
 }

@@ -3,7 +3,7 @@
 
 use iota_sdk::types::block::output::{NativeToken, NftId, TokenId};
 use packable::error::{UnpackError, UnpackErrorExt};
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
 
 use crate::{U256Special, U64Special};
 
@@ -11,7 +11,7 @@ pub const BASE_TOKEN_FLAG: u8 = 0x80;
 pub const NATIVE_TOKENS_FLAG: u8 = 0x40;
 pub const NFTS_FLAG: u8 = 0x20;
 
-#[derive(Debug, Default, Eq, PartialEq)]
+#[derive(Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Assets {
     base_tokens: U64Special,
     native_tokens: Option<Vec<NativeToken>>,
@@ -138,10 +138,8 @@ impl packable::Packable for Assets {
             // native tokens
             let tokens_len = *U64Special::unpack::<_, VERIFY>(unpacker, visitor)?;
             for _ in 0..tokens_len {
-                let token_id =
-                    TokenId::unpack::<_, VERIFY>(unpacker, visitor).map_packable_err(|e| crate::Error::Placeholder)?;
-                let amount = U256Special::unpack::<_, VERIFY>(unpacker, visitor)
-                    .map_packable_err(|e| crate::Error::Placeholder)?;
+                let token_id = TokenId::unpack::<_, VERIFY>(unpacker, visitor).coerce()?;
+                let amount = U256Special::unpack::<_, VERIFY>(unpacker, visitor).coerce()?;
 
                 assets
                     .add_native_token(NativeToken::new(token_id, *amount).map_err(|e| UnpackError::Packable(e.into()))?)
@@ -151,31 +149,11 @@ impl packable::Packable for Assets {
             // nfts
             let nfts_len = *U64Special::unpack::<_, VERIFY>(unpacker, visitor)?;
             for _ in 0..nfts_len {
-                let nft =
-                    NftId::unpack::<_, VERIFY>(unpacker, visitor).map_packable_err(|e| crate::Error::Placeholder)?;
+                let nft = NftId::unpack::<_, VERIFY>(unpacker, visitor).coerce()?;
                 assets.add_nft(nft);
             }
         }
 
         Ok(assets)
-    }
-}
-
-impl Serialize for Assets {
-    fn serialize<S>(&self, s: S) -> std::result::Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let ser = format!("{:0>2}{:?}", 0, self);
-        s.serialize_str(&ser)
-    }
-}
-
-impl<'de> Deserialize<'de> for Assets {
-    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        Ok(Assets::default())
     }
 }
