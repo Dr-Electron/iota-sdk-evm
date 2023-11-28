@@ -5,7 +5,12 @@ mod core;
 
 pub use core::*;
 
-use packable::error::UnpackErrorExt;
+use iota_sdk::packable::{
+    error::{UnpackError, UnpackErrorExt},
+    packer::Packer,
+    unpacker::Unpacker,
+    Packable,
+};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
@@ -20,22 +25,22 @@ impl AgentId {
     }
 }
 
-impl packable::Packable for AgentId {
+impl Packable for AgentId {
     type UnpackError = crate::Error;
 
     type UnpackVisitor = ();
 
-    fn pack<P: packable::packer::Packer>(&self, packer: &mut P) -> Result<(), P::Error> {
+    fn pack<P: Packer>(&self, packer: &mut P) -> Result<(), P::Error> {
         let mut bytes = [3_u8].to_vec();
         bytes.extend(hex::decode(&self.chain_id).expect("Invalid hex for chain id"));
         bytes.extend(hex::decode(&self.address).expect("Invalid hex for address"));
         packer.pack_bytes(bytes)
     }
 
-    fn unpack<U: packable::unpacker::Unpacker, const VERIFY: bool>(
+    fn unpack<U: Unpacker, const VERIFY: bool>(
         unpacker: &mut U,
         visitor: &Self::UnpackVisitor,
-    ) -> Result<Self, packable::error::UnpackError<Self::UnpackError, U::Error>> {
+    ) -> Result<Self, UnpackError<Self::UnpackError, U::Error>> {
         let id = u8::unpack::<_, VERIFY>(unpacker, visitor).coerce()?;
         match id {
             3 => {

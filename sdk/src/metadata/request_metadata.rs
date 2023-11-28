@@ -4,7 +4,12 @@
 use std::collections::HashMap;
 
 use crypto::hashes::{blake2b::Blake2b256, Digest};
-use packable::error::UnpackErrorExt;
+use iota_sdk::packable::{
+    error::{UnpackError, UnpackErrorExt},
+    packer::Packer,
+    unpacker::Unpacker,
+    Packable,
+};
 use serde::{Deserialize, Serialize};
 
 use crate::{Assets, ContractIdentity, U64Special};
@@ -38,12 +43,12 @@ impl RequestMetadata {
     }
 }
 
-impl packable::Packable for RequestMetadata {
+impl Packable for RequestMetadata {
     type UnpackError = crate::Error;
 
     type UnpackVisitor = ();
 
-    fn pack<P: packable::packer::Packer>(&self, packer: &mut P) -> Result<(), P::Error> {
+    fn pack<P: Packer>(&self, packer: &mut P) -> Result<(), P::Error> {
         self.sender_contract.pack(packer)?;
 
         self.target_contract.to_le_bytes().pack(packer)?;
@@ -62,10 +67,10 @@ impl packable::Packable for RequestMetadata {
         Ok(())
     }
 
-    fn unpack<U: packable::unpacker::Unpacker, const VERIFY: bool>(
+    fn unpack<U: Unpacker, const VERIFY: bool>(
         unpacker: &mut U,
         visitor: &Self::UnpackVisitor,
-    ) -> Result<Self, packable::error::UnpackError<Self::UnpackError, U::Error>> {
+    ) -> Result<Self, UnpackError<Self::UnpackError, U::Error>> {
         let sender_contract = ContractIdentity::unpack::<U, VERIFY>(unpacker, visitor)?;
 
         let target_contract = u32::unpack::<_, VERIFY>(unpacker, visitor).coerce()?.to_le();
@@ -125,8 +130,10 @@ pub fn hname(name: &str) -> u32 {
 mod tests {
     use std::str::FromStr;
 
-    use iota_sdk::types::block::output::{NativeToken, TokenId};
-    use packable::PackableExt;
+    use iota_sdk::{
+        packable::PackableExt,
+        types::block::output::{NativeToken, TokenId},
+    };
 
     use crate::{ethereum_agent_id, hname, ContractIdentity, RequestMetadata, ACCOUNTS};
 
@@ -171,7 +178,6 @@ mod tests {
     }
 
     #[tokio::test]
-
     async fn unpack() {
         let new_meta = RequestMetadata::unpack_unverified(hex::decode(SER).unwrap()).unwrap();
         assert_eq!(get_metadata(), new_meta);

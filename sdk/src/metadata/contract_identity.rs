@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crypto::signatures::secp256k1_ecdsa::EvmAddress;
-use packable::{
+use iota_sdk::packable::{
     error::{UnpackError, UnpackErrorExt},
-    PackableExt,
+    packer::Packer,
+    unpacker::Unpacker,
+    Packable, PackableExt,
 };
 use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
 
@@ -39,12 +41,12 @@ impl ContractIdentity {
     }
 }
 
-impl packable::Packable for ContractIdentity {
+impl Packable for ContractIdentity {
     type UnpackError = crate::Error;
 
     type UnpackVisitor = ();
 
-    fn pack<P: packable::packer::Packer>(&self, packer: &mut P) -> Result<(), P::Error> {
+    fn pack<P: Packer>(&self, packer: &mut P) -> Result<(), P::Error> {
         match self {
             ContractIdentity::ETH(agent) => agent.pack(packer),
             _ => {
@@ -54,10 +56,10 @@ impl packable::Packable for ContractIdentity {
         }
     }
 
-    fn unpack<U: packable::unpacker::Unpacker, const VERIFY: bool>(
+    fn unpack<U: Unpacker, const VERIFY: bool>(
         unpacker: &mut U,
         visitor: &Self::UnpackVisitor,
-    ) -> Result<Self, packable::error::UnpackError<Self::UnpackError, U::Error>> {
+    ) -> Result<Self, UnpackError<Self::UnpackError, U::Error>> {
         Ok(match u8::unpack::<_, VERIFY>(unpacker, &()).coerce()? {
             NULL_KIND => Self::Null,
             ISC_KIND => Self::ISC(u32::unpack::<_, VERIFY>(unpacker, visitor).coerce()?),
@@ -111,7 +113,7 @@ impl<'de> Deserialize<'de> for ContractIdentity {
 
 #[cfg(test)]
 mod tests {
-    use packable::PackableExt;
+    use iota_sdk::packable::PackableExt;
 
     use crate::{hname, ContractIdentity, ACCOUNTS};
 

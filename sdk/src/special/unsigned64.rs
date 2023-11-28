@@ -3,7 +3,12 @@
 
 use core::ops::Deref;
 
-use packable::error::{UnpackError, UnpackErrorExt};
+use iota_sdk::packable::{
+    error::{UnpackError, UnpackErrorExt},
+    packer::Packer,
+    unpacker::Unpacker,
+    Packable,
+};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Default, Clone, Eq, PartialEq, PartialOrd, Hash, Serialize, Deserialize)]
@@ -22,25 +27,26 @@ impl Deref for U64Special {
     }
 }
 
-impl packable::Packable for U64Special {
+impl Packable for U64Special {
     type UnpackError = crate::Error;
 
     type UnpackVisitor = ();
 
-    fn pack<P: packable::packer::Packer>(&self, packer: &mut P) -> Result<(), P::Error> {
+    fn pack<P: Packer>(&self, packer: &mut P) -> Result<(), P::Error> {
         packer.pack_bytes(size64_encode(**self))
     }
 
-    fn unpack<U: packable::unpacker::Unpacker, const VERIFY: bool>(
+    fn unpack<U: Unpacker, const VERIFY: bool>(
         unpacker: &mut U,
         visitor: &Self::UnpackVisitor,
-    ) -> Result<Self, packable::error::UnpackError<Self::UnpackError, U::Error>> {
+    ) -> Result<Self, UnpackError<Self::UnpackError, U::Error>> {
         let byte_stream = || {
-            let err = u8::unpack::<_, VERIFY>(unpacker, visitor).coerce();
-            err.map_err(|_: UnpackError<Self::UnpackError, U::Error>| crate::Error::IO {
-                expected: std::io::ErrorKind::InvalidData,
-                message: "failed to unpack a byte",
-            })
+            u8::unpack::<_, VERIFY>(unpacker, visitor).coerce().map_err(
+                |_: UnpackError<Self::UnpackError, U::Error>| crate::Error::IO {
+                    expected: std::io::ErrorKind::InvalidData,
+                    message: "failed to unpack a byte",
+                },
+            )
         };
 
         Ok(U64Special(size64_decode(byte_stream).map_err(UnpackError::Packable)?))

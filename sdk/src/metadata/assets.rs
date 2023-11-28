@@ -1,8 +1,15 @@
 // Copyright 2023 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use iota_sdk::types::block::output::{NativeToken, NftId, TokenId};
-use packable::error::{UnpackError, UnpackErrorExt};
+use iota_sdk::{
+    packable::{
+        error::{UnpackError, UnpackErrorExt},
+        unpacker::Unpacker,
+        packer::Packer,
+        Packable,
+    },
+    types::block::output::{NativeToken, NftId, TokenId},
+};
 use serde::{Deserialize, Serialize};
 
 use crate::{U256Special, U64Special};
@@ -97,12 +104,12 @@ impl Assets {
     }
 }
 
-impl packable::Packable for Assets {
+impl Packable for Assets {
     type UnpackError = crate::Error;
 
     type UnpackVisitor = ();
 
-    fn pack<P: packable::packer::Packer>(&self, packer: &mut P) -> Result<(), P::Error> {
+    fn pack<P: Packer>(&self, packer: &mut P) -> Result<(), P::Error> {
         self.flags().pack(packer)?;
         if self.has_base_tokens() {
             U64Special::pack(&self.base_tokens, packer)?;
@@ -123,10 +130,10 @@ impl packable::Packable for Assets {
         Ok(())
     }
 
-    fn unpack<U: packable::unpacker::Unpacker, const VERIFY: bool>(
+    fn unpack<U: Unpacker, const VERIFY: bool>(
         unpacker: &mut U,
         visitor: &Self::UnpackVisitor,
-    ) -> Result<Self, packable::error::UnpackError<Self::UnpackError, U::Error>> {
+    ) -> Result<Self, UnpackError<Self::UnpackError, U::Error>> {
         let flags = u8::unpack::<_, VERIFY>(unpacker, &()).coerce()?;
         let mut assets = Assets::default();
         if flags & BASE_TOKEN_FLAG != 0 {

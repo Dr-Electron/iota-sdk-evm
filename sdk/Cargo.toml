@@ -11,7 +11,6 @@ tokio = { version = "1.26" }
 dotenvy = { version = "0.15" }
 serde = "1.0"
 serde_json = { version = "1.0", features = ["raw_value"] }
-packable = { version = "0.8.3", features = [ "usize", "io", "serde", "std", "primitive-types"] }
 hex = "0.4.3"
 thiserror = { version = "1.0.40" }
 iota-crypto = { version = "0.23.0", default-features = false, features = [

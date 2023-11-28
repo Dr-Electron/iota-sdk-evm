@@ -3,7 +3,12 @@
 
 use core::ops::Deref;
 
-use packable::error::UnpackErrorExt;
+use iota_sdk::packable::{
+    error::{UnpackError, UnpackErrorExt},
+    packer::Packer,
+    unpacker::Unpacker,
+    Packable,
+};
 use serde::{Deserialize, Serialize};
 
 use crate::U64Special;
@@ -29,19 +34,19 @@ impl Deref for Gas {
     }
 }
 
-impl packable::Packable for Gas {
+impl Packable for Gas {
     type UnpackError = crate::Error;
 
     type UnpackVisitor = ();
 
-    fn pack<P: packable::packer::Packer>(&self, packer: &mut P) -> Result<(), P::Error> {
+    fn pack<P: Packer>(&self, packer: &mut P) -> Result<(), P::Error> {
         U64Special::from(*self.0 + 1).pack(packer)
     }
 
-    fn unpack<U: packable::unpacker::Unpacker, const VERIFY: bool>(
+    fn unpack<U: Unpacker, const VERIFY: bool>(
         unpacker: &mut U,
         visitor: &Self::UnpackVisitor,
-    ) -> Result<Self, packable::error::UnpackError<Self::UnpackError, U::Error>> {
+    ) -> Result<Self, UnpackError<Self::UnpackError, U::Error>> {
         let size = U64Special::unpack::<_, VERIFY>(unpacker, visitor).coerce()?;
 
         Ok(Self(U64Special::from(*size - 1)))
