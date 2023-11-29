@@ -12,7 +12,7 @@ use iota_sdk::packable::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{Assets, ContractIdentity, U64Special};
+use crate::{Assets, ContractIdentity, EvmAddress, U64Special};
 
 /// https://wiki.iota.org/wasp-evm/reference/core-contracts/overview/
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
@@ -109,10 +109,10 @@ impl Packable for RequestMetadata {
 ///
 /// * `chain_id`: The `chain_id` parameter represents the ID of the Ethereum blockchain network.
 /// * `address`: The `address` parameter is a hexadecimal string representing the Ethereum address.
-pub fn ethereum_agent_id(chain_id: String, address: String) -> Vec<u8> {
+pub fn ethereum_agent_id(chain_id: &str, address: &EvmAddress) -> Vec<u8> {
     let mut bytes = [3_u8].to_vec();
     bytes.extend(hex::decode(chain_id).expect("Invalid hex for chain id"));
-    bytes.extend(hex::decode(address).expect("Invalid hex for address"));
+    bytes.extend(address.as_ref());
 
     bytes
 }
@@ -130,6 +130,7 @@ pub fn hname(name: &str) -> u32 {
 mod tests {
     use std::str::FromStr;
 
+    use crypto::signatures::secp256k1_ecdsa::EvmAddress;
     use iota_sdk::{
         packable::PackableExt,
         types::block::output::{NativeToken, TokenId},
@@ -185,7 +186,7 @@ mod tests {
 
     #[tokio::test]
     async fn unpack_ics() {
-        let new_meta = RequestMetadata::unpack_unverified(hex::decode(SER_ISC).unwrap()).unwrap();
+        let new_meta = RequestMetadata::unpack_unverified(hex::decode("010000000066bc2cde68027a052c88da011b6711b2c7828cae15d0faea53831f9c24902da9a488dfbbc169edab010000000100000001000000010000000000").unwrap()).unwrap();
         assert_eq!(
             RequestMetadata::new(ContractIdentity::ISC(hname(ACCOUNTS)), None, None, 0),
             new_meta
@@ -199,11 +200,16 @@ mod tests {
             "transferAllowanceTo".to_string(),
             10000,
         );
+
+        let mut bytes = [0u8; 20];
+        bytes.copy_from_slice(&hex::decode("E913CAc59E0bA840039aDD645D5df83C294CC230").unwrap());
+        let evm_addr = EvmAddress::from(bytes);
+
         metadata.params.insert(
             "a".to_string(),
             ethereum_agent_id(
-                "e14c3499349cb8d2fd771e09829883e4ecfae02e6b09c9b6a0fb3c7504b4e2f4".to_string(),
-                "E913CAc59E0bA840039aDD645D5df83C294CC230".to_string(),
+                "e14c3499349cb8d2fd771e09829883e4ecfae02e6b09c9b6a0fb3c7504b4e2f4",
+                &evm_addr,
             ),
         );
         metadata.allowance.add_native_token(

@@ -1,7 +1,7 @@
 // Copyright 2023 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-use crypto::signatures::secp256k1_ecdsa::EvmAddress;
+pub use iota_sdk::crypto::signatures::secp256k1_ecdsa::EvmAddress;
 use iota_sdk::packable::{
     error::{UnpackError, UnpackErrorExt},
     packer::Packer,

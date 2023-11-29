@@ -4,8 +4,8 @@
 use iota_sdk::{
     packable::{
         error::{UnpackError, UnpackErrorExt},
-        unpacker::Unpacker,
         packer::Packer,
+        unpacker::Unpacker,
         Packable,
     },
     types::block::output::{NativeToken, NftId, TokenId},
@@ -163,4 +163,12 @@ impl Packable for Assets {
 
         Ok(assets)
     }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AssetsDto {
+    #[serde(with = "iota_sdk::utils::serde::string")]
+    pub base_tokens: u64,
+    pub native_tokens: Vec<String>,
 }
