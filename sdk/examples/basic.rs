@@ -10,7 +10,6 @@
 
 use std::str::FromStr;
 
-
 use instant::Duration;
 use iota_sdk::{
     client::{
@@ -92,6 +91,8 @@ async fn main() -> Result<()> {
 
     let wasp_url = std::env::var("WASP_NODE").unwrap();
     let api = Api::new(Url::parse(wasp_url.as_str()).unwrap());
+
+    println!("wasp node: '{:?}'", api.info().await?);
 
     if balance.base_coin().available() > 0 {
         // 225053825 glow -> 220.053826 SMR ( 4999999 gas fee + 0.01 fee on evm )
