@@ -10,7 +10,7 @@
 
 use std::str::FromStr;
 
-use crypto::signatures::ed25519::PublicKey;
+
 use instant::Duration;
 use iota_sdk::{
     client::{
@@ -86,7 +86,7 @@ async fn main() -> Result<()> {
         )
         .await?;
     let bytes: [u8; 20] = prefix_hex::decode(&evm_address[0]).unwrap();
-    let evm_addr = EvmAddress::from(bytes);
+    let _evm_addr = EvmAddress::from(bytes);
 
     println!("Using evm address: {:?}", evm_address);
 
@@ -199,7 +199,7 @@ async fn send_to_evm(
     wait(account, &transaction.transaction_id).await
 }
 
-async fn one_milestone(client: &Client) -> Result<()> {
+async fn one_milestone(_client: &Client) -> Result<()> {
     let duration = Duration::from_secs(3);
     tokio::time::sleep(duration).await;
     Ok(())

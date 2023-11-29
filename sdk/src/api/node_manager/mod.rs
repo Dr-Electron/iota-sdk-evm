@@ -13,14 +13,14 @@ use std::fmt::Debug;
 use instant::Duration;
 use iota_sdk::{
     client::node_manager::node::Node,
-    types::block::address::{Bech32Address, Ed25519Address},
+    types::block::address::{Bech32Address},
 };
 use serde::{de::DeserializeOwned, Serialize};
-use serde_json::Value;
+
 use url::Url;
 
 use self::http_client::HttpClient;
-use crate::{Assets, AssetsDto, Result};
+use crate::{AssetsDto, Result};
 
 pub struct Api {
     node: Node,
@@ -39,8 +39,8 @@ impl Api {
         Duration::from_secs(10)
     }
 
-    /// Returns the available API route groups of the node.
-    /// GET /api/routes
+    /// Returns the balance of an l1 address available for l2 transfers.
+    /// GET /v1/chains/{chain}/core/accounts/account/{address}/balance
     pub async fn get_balance(&self, chain: &str, address: Bech32Address) -> Result<AssetsDto> {
         // AssetsDto
         let path = &format!("v1/chains/{chain}/core/accounts/account/{address}/balance");
@@ -52,13 +52,13 @@ impl Api {
         &self,
         path: &str,
         query: Option<&str>,
-        need_quorum: bool,
-        prefer_permanode: bool,
+        _need_quorum: bool,
+        _prefer_permanode: bool,
     ) -> Result<T> {
         let mut node = self.node.clone();
         node.url.set_path(path);
         node.url.set_query(query);
-        if let Some(auth) = &node.auth {
+        if let Some(_auth) = &node.auth {
             // if let Some((name, password)) = &auth.basic_auth_name_pwd {
             // node.url
             // .set_username(name)
