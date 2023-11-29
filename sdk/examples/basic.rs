@@ -14,7 +14,7 @@ use instant::Duration;
 use iota_sdk::{
     client::{
         constants::SHIMMER_COIN_TYPE,
-        secret::{stronghold::StrongholdSecretManager, SecretManage, SecretManager},
+        secret::{stronghold::StrongholdSecretManager, SecretManager},
         Client,
     },
     crypto::keys::bip39::Mnemonic,
@@ -92,7 +92,8 @@ async fn main() -> Result<()> {
     let wasp_url = std::env::var("WASP_NODE").unwrap();
     let api = Api::new(Url::parse(wasp_url.as_str()).unwrap());
 
-    println!("wasp node: '{:?}'", api.info().await?);
+    // Not working atm
+    // println!("wasp node: '{:?}'", api.info().await?);
 
     if balance.base_coin().available() > 0 {
         // 225053825 glow -> 220.053826 SMR ( 4999999 gas fee + 0.01 fee on evm )
@@ -201,6 +202,7 @@ async fn send_to_evm(
 }
 
 async fn one_milestone(_client: &Client) -> Result<()> {
+    // we cheat
     let duration = Duration::from_secs(3);
     tokio::time::sleep(duration).await;
     Ok(())
