@@ -8,10 +8,7 @@ pub(crate) mod http_client;
 use std::fmt::Debug;
 
 use instant::Duration;
-use iota_sdk::{
-    client::{node_api::error::Error, node_manager::node::Node},
-    types::block::address::Bech32Address,
-};
+use iota_sdk::{client::node_manager::node::Node, types::block::address::Bech32Address};
 use serde::{de::DeserializeOwned, Serialize};
 use url::Url;
 

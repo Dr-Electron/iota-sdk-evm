@@ -22,6 +22,7 @@ pub const ERRORS: &'static str = "errors";
 /// Provides the necessary infrastructure to accept Ethereum transactions and execute EVM code.
 pub const EVM: &'static str = "evm";
 
+/// https://wiki.iota.org/wasp-evm/reference/core-contracts/overview/
 pub enum CoreContracts {
     Root(RootContract),
     Accounts(AccountsContract),
