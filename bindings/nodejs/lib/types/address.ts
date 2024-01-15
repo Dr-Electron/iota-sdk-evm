@@ -1,4 +1,4 @@
+import { HexEncodedString } from "@iota/sdk";
 
-export class EvmAddress {
-
-}
+// With prefix
+export type EvmAddress = HexEncodedString;

@@ -12,6 +12,7 @@
 # Miscellaneous
 *.log
 .env
+example-walletdb
 *.stronghold
 !**/tests/**/**.stronghold
 .DS_Store

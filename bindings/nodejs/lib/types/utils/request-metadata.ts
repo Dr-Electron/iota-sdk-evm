@@ -13,11 +13,11 @@ export class RequestMetadata {
     readonly senderContract: ContractIdentity;
     readonly targetContract: number;
     readonly targetEntryPoint: number;
-    readonly gasBudget: BigInt;
+    readonly gasBudget: bigint;
     readonly params: Map<string, Uint8Array> = new Map();
     readonly allowance: Assets = new Assets();
 
-    constructor(senderContract: ContractIdentity, targetContract: Contract, targetEntryPoint: string, gasBudget: BigInt) {
+    constructor(senderContract: ContractIdentity, targetContract: Contract, targetEntryPoint: string, gasBudget: bigint) {
         this.senderContract = senderContract;
         this.targetContract = Utils.hname(targetContract);
         this.targetEntryPoint = Utils.hname(targetEntryPoint);;

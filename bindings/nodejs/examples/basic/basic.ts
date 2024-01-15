@@ -2,7 +2,7 @@
 
 import { Api, Utils, initLogger, Constants, EvmAddress, NullIdentity, RequestMetadata, Contract } from "@iota/sdk-evm";
 
-import { Wallet, Account, SecretManager, WalletOptions, CoinType, Address, SenderFeature, MetadataFeature, TransactionId, Client, AccountAddress, Bech32Address, Ed25519Address } from '@iota/sdk';
+import { Wallet, Account, SecretManager, WalletOptions, CoinType, Address, SenderFeature, Utils as SdkUtils, TransactionId, Client, Ed25519Address, Bech32Address, AccountAddress } from '@iota/sdk';
 import { AddressUnlockCondition, BlockId } from '@iota/sdk';
 
 // Run with command:
@@ -33,7 +33,7 @@ async function run(): Promise<void> {
 
         // Store the mnemonic in the Stronghold snapshot, this needs to be done only the first time.
         // The mnemonic can't be retrieved from the Stronghold file, so make a backup in a secure place!
-        // await secretManager.storeMnemonic(process.env.MNEMONIC!);
+        //await secretManager.storeMnemonic(process.env.MNEMONIC!);
 
         const walletOptions: WalletOptions = {
             storagePath: process.env.WALLET_DB_PATH,
@@ -41,19 +41,27 @@ async function run(): Promise<void> {
                 nodes: [process.env.NODE_URL!],
                 ignoreNodeHealth: true
             },
-            coinType: CoinType.IOTA,
+            coinType: CoinType.Shimmer,
             secretManager: strongholdSecretManager,
         };
 
         let wallet = new Wallet(walletOptions);
 
-        let account = (await wallet.getAccounts())[0];
+        let accounts = await wallet.getAccounts();
+        let account;
+        if (accounts.length == 0) {
+            account = await wallet.createAccount({})
+        } else {
+            account = accounts[0];
+        }
+
         let accountAddrs = await account.generateEd25519Addresses(2);
 
         let balance = await account.sync();
         let accountAddr = accountAddrs[0];
         console.log(`Using addr: '${accountAddr.address}'`);
 
+        // Prefixed with 0x
         let evm_address = await secretManager
             .generateEvmAddresses({
                 range: {
@@ -61,8 +69,6 @@ async function run(): Promise<void> {
                     end: accountAddr.keyIndex + 1,
                 }
             });
-        //let bytes prefix_hex::decode(&evm_address[0]).unwrap();
-        //let _evm_addr = new EvmAddress(bytes);
 
         console.log(`Using evm address: '${evm_address}'`);
 
@@ -82,19 +88,18 @@ async function run(): Promise<void> {
 
             let to_send = BigInt(1000); //balance.base_coin().available() / BigInt(2);
             console.log(`Sending: '${to_send}'`);
-            // let _ = send_to_evm(&account, to_send, accountAddr, Some(&evm_addr));
-            let _blockId = await sendToEVM(account, client, to_send, new Ed25519Address(accountAddr.address));
+            let _blockId = await sendToEVM(account, client, to_send, accountAddr);
 
             // Wasp node updates after at most 1 more milestone
             console.log("await 1 milestone...");
             await oneMilestone(await wallet.getClient());
 
             let assetsPost = await api.getBalance(Constants.TESTNET_CHAIN_ADDRESS, accountAddr.address);
-            console.log(`EVM balance post: '${assetsPost}'`);
+            console.log('EVM balance post: ', assetsPost);
 
             console.log("------[ WITHDRAW ]---------");
 
-            _blockId = await withdrawFromEvm(account, client, assetsPost.baseTokens, new Ed25519Address(accountAddr.address));
+            _blockId = await withdrawFromEvm(account, client, assetsPost.baseTokens, accountAddr);
 
             // Wasp node updates after at most 1 more milestone
             console.log("await 1 milestone...");
@@ -113,17 +118,17 @@ async function run(): Promise<void> {
 }
 
 // Example translation for withdraw function
-async function withdrawFromEvm(account: Account, client: Client, amount: bigint, fromAddr: Address): Promise<BlockId> {
+async function withdrawFromEvm(account: Account, client: Client, amount: bigint, fromAddr: AccountAddress): Promise<BlockId> {
     const metadata = withdraw(amount);
     
     const outputs = [
         await client.buildBasicOutput({
             unlockConditions: [new AddressUnlockCondition(
-                new Ed25519Address(Constants.TESTNET_CHAIN_ADDRESS),
+                SdkUtils.parseBech32Address(Constants.TESTNET_CHAIN_ADDRESS),
             )],
             features: [
                     metadata.asFeature(),
-                    new SenderFeature(fromAddr),
+                    new SenderFeature(SdkUtils.parseBech32Address(fromAddr.address)),
                 ],
         })
     ];
@@ -138,7 +143,7 @@ async function sendToEVM(
     account: Account,
     client: Client,
     amount: bigint,
-    fromAddr: Address,
+    fromAddr: AccountAddress,
     toAddress?: EvmAddress
 ): Promise<BlockId> {
     const metadata = toAddress
@@ -148,11 +153,11 @@ async function sendToEVM(
     const outputs = [
         await client.buildBasicOutput({
             unlockConditions: [new AddressUnlockCondition(
-                new Ed25519Address(Constants.TESTNET_CHAIN_ADDRESS),
+                SdkUtils.parseBech32Address(Constants.TESTNET_CHAIN_ADDRESS)
             )],
             features: [
                     metadata.asFeature(),
-                    new SenderFeature(fromAddr),
+                    new SenderFeature(SdkUtils.parseBech32Address(fromAddr.address)),
                 ],
         })
     ];
@@ -186,9 +191,9 @@ function withdraw(amount: bigint): RequestMetadata {
         NullIdentity,
         Contract.Account,
         'withdraw',
-        BigInt(500),
+        Constants.MIN_GAS_FEE,
     );
-    metadata.allowance.baseTokens = amount;
+    metadata.allowance.baseTokens = amount - Constants.MIN_GAS_FEE;
     return metadata;
 }
 

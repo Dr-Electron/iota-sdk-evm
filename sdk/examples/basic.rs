@@ -52,7 +52,7 @@ async fn main() -> Result<()> {
     let mnemonic = Mnemonic::from(std::env::var("MNEMONIC").unwrap());
     println!("Using mnemonic: {:?}", mnemonic);
 
-    // secret_manager.store_mnemonic(mnemonic).await.unwrap();
+    secret_manager.store_mnemonic(mnemonic).await.unwrap();
 
     let client_options = ClientOptions::new()
         .with_node(&std::env::var("NODE_URL").unwrap())
