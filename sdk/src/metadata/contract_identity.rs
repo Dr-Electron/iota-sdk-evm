@@ -17,7 +17,7 @@ pub const ISC_KIND: u8 = 1;
 pub const EVM_KIND: u8 = 2;
 pub const ETHEREUM_ADDRESS_KIND: u8 = 3;
 
-#[derive(Eq, PartialEq)]
+#[derive(Eq, PartialEq, Clone)]
 pub enum ContractIdentity {
     ///
     Null,

@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 use crate::{Assets, ContractIdentity, EvmAddress, U64Special};
 
 /// https://wiki.iota.org/wasp-evm/reference/core-contracts/overview/
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct RequestMetadata {
     sender_contract: ContractIdentity,
     target_contract: u32,

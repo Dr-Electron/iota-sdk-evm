@@ -18,7 +18,7 @@ pub const BASE_TOKEN_FLAG: u8 = 0x80;
 pub const NATIVE_TOKENS_FLAG: u8 = 0x40;
 pub const NFTS_FLAG: u8 = 0x20;
 
-#[derive(Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Default, Eq, PartialEq, Serialize, Deserialize, Clone)]
 pub struct Assets {
     base_tokens: U64Special,
     native_tokens: Option<Vec<NativeToken>>,

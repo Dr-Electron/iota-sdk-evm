@@ -1,0 +1,38 @@
+[package]
+name = "iota-sdk-evm-bindings-core"
+version = "0.1.0"
+authors = ["IOTA Stiftung"]
+edition = "2021"
+homepage = "https://iota.org"
+description = "Bindings core for the IOTA SDK"
+license = "Apache-2.0"
+publish = false
+
+[dependencies]
+iota-sdk-evm = { path = "../../sdk" }
+iota-sdk = { git = "https://github.com/iotaledger/iota-sdk", branch = "develop", default-features = false, features = [ "tls", "wallet", "stronghold", "rand", "storage" ] }
+
+backtrace = { version = "0.3.69", default-features = false, features = ["std"] }
+derivative = { version = "2.2.0", default-features = false }
+fern-logger = { version = "0.5.0", default-features = false }
+futures = { version = "0.3.30", default-features = false }
+iota-crypto = { version = "0.23.0", default-features = false, features = [
+    "slip10",
+    "bip44",
+] }
+log = { version = "0.4.20", default-features = false }
+packable = { version = "0.10.0", default-features = false }
+hex = { version = "0.4.3", default-features = false }
+prefix-hex = { version = "0.7.1", default-features = false }
+primitive-types = { version = "0.12.2", default-features = false }
+serde = { version = "1.0.195", default-features = false }
+serde_json = { version = "1.0.111", default-features = false }
+thiserror = { version = "1.0.56", default-features = false }
+tokio = { version = "1.35.1", default-features = false }
+url = { version = "2.4.1", default-features = false, features = ["serde"] }
+zeroize = { version = "1.7.0", default-features = false }
+
+[dev-dependencies]
+pretty_assertions = { version = "1.4.0", default-features = false, features = [
+    "alloc",
+] }

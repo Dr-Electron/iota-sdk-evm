@@ -13,7 +13,7 @@ use iota_sdk::packable::{
 };
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct AgentId {
     chain_id: String,
     address: String,
