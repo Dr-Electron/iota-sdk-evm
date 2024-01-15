@@ -11,7 +11,7 @@ import {
     utf8ToHex,
     TaggedDataPayload,
     SecretManager,
-} from '../../';
+} from '../../out';
 import '../customMatchers';
 
 async function makeClient(): Promise<Client> {

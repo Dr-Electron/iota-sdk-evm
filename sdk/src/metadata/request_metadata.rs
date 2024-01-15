@@ -16,7 +16,9 @@ use crate::{Assets, ContractIdentity, EvmAddress, U64Special};
 
 /// https://wiki.iota.org/wasp-evm/reference/core-contracts/overview/
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct RequestMetadata {
+    #[serde(default)] // NullContractIdentity gets skipped on serialization in js
     sender_contract: ContractIdentity,
     target_contract: u32,
     target_entry_point: u32,

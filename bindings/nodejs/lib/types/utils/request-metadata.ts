@@ -25,6 +25,6 @@ export class RequestMetadata {
     }
 
     asFeature(): MetadataFeature {
-        return new MetadataFeature(Utils.specialEncode(this));
+        return new MetadataFeature("0x" + Utils.specialEncode(this));
     }
 }

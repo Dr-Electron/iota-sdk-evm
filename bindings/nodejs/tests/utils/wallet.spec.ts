@@ -4,7 +4,7 @@
 import 'reflect-metadata';
 
 import { describe, it, expect } from '@jest/globals';
-import { Wallet, CoinType, WalletOptions, SecretManager } from '../../lib/';
+import { Wallet, CoinType, WalletOptions, SecretManager } from '../../lib';
 
 describe('Wallet', () => {
     it('create wallet', async () => {

@@ -16,7 +16,7 @@ require('dotenv').config({ path: '.env' });
 async function run(): Promise<void> {
     try {
         initLogger();
-        for (const envVar of ['MNEMONIC', 'STRONGHOLD_SNAPSHOT_PATH', 'STRONGHOLD_PASSWORD', 'WALLET_DB_PATH', 'NODE_URL']) {
+        for (const envVar of ['MNEMONIC', 'STRONGHOLD_SNAPSHOT_PATH', 'STRONGHOLD_PASSWORD', 'WALLET_DB_PATH', 'NODE_URL', 'WASP_NODE']) {
             if (!(envVar in process.env)) {
                 throw new Error(`.env ${envVar} is undefined, see .env.example`);
             }
@@ -141,11 +141,9 @@ async function sendToEVM(
     fromAddr: Address,
     toAddress?: EvmAddress
 ): Promise<BlockId> {
-    console.log("sendToEVM")
     const metadata = toAddress
         ? depositTo(amount, toAddress)
         : deposit(amount);
-    console.log(metadata)
     
     const outputs = [
         await client.buildBasicOutput({
@@ -158,7 +156,6 @@ async function sendToEVM(
                 ],
         })
     ];
-    console.log(outputs)
 
     const transaction = await account.sendOutputs(outputs);
     console.log(

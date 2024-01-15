@@ -5,8 +5,8 @@ use std::sync::Arc;
 
 use iota_sdk_evm_bindings_core::{
     call_api_method as rust_call_api_method,
-    iota_sdk::client::{Api, ApiBuilder},
-    Response,
+    iota_sdk::client::{Api, ApiBuilder, Error as ClientError},
+    Response, iota_sdk_evm::Error
 };
 use tokio::sync::RwLock;
 use wasm_bindgen::{prelude::wasm_bindgen, JsError};
@@ -26,7 +26,7 @@ impl ApiMethodHandler {
 /// Creates a method handler with the given client options.
 #[wasm_bindgen(js_name = createApi)]
 pub async fn create_client(options: String) -> Result<ApiMethodHandler, JsError> {
-    let api = Api::new(serde_json::from_str::<Url>(&url).map_err(NodejsError::new)?);
+    let api = Api::new(Url::parse(&url).map_err(|e| NodejsError::new(Error::ClientError(ClientError::Url(e))))?);
 
     Ok(ApiMethodHandler(Arc::new(RwLock::new(Some(api)))))
 }

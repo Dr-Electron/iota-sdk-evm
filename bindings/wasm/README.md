@@ -36,18 +36,18 @@ To install the library from your package manager of choice, you only need to run
 #### npm
 
 ```bash
-npm i @iota/sdk-wasm
+npm i @iota/sdk-evm-wasm
 ```
 
 #### yarn
 
 ```bash
-yarn add @iota/sdk-wasm
+yarn add @iota/sdk-evm-wasm
 ```
 
 ### Web Setup
 
-The library loads the compiled Wasm file with an HTTP GET request, so the `iota_sdk_wasm_bg.wasm` file must be copied to
+The library loads the compiled Wasm file with an HTTP GET request, so the `iota_sdk_evm_wasm_bg.wasm` file must be copied to
 the root of the distribution folder.
 
 A bundler such as [webpack](https://webpack.js.org/) or [rollup](https://rollupjs.org/) is recommended.
@@ -71,9 +71,9 @@ A bundler such as [webpack](https://webpack.js.org/) or [rollup](https://rollupj
     // Add the copy plugin to the `plugins` array:
     copy({
       targets: [{
-        src: 'node_modules/@iota/sdk-wasm/web/wasm/iota_sdk_wasm_bg.wasm',
+        src: 'node_modules/@iota/sdk-evm-wasm/web/wasm/iota_sdk_evm_wasm_bg.wasm',
         dest: 'public',
-        rename: 'iota_sdk_wasm_bg.wasm'
+        rename: 'iota_sdk_evm_wasm_bg.wasm'
       }]
     })
     ```
@@ -104,8 +104,8 @@ A bundler such as [webpack](https://webpack.js.org/) or [rollup](https://rollupj
         new CopyWebPlugin({
           patterns: [
             {
-              from: 'node_modules/@iota/sdk-wasm/web/wasm/iota_sdk_wasm_bg.wasm',
-              to: 'iota_sdk_wasm_bg.wasm'
+              from: 'node_modules/@iota/sdk-evm-wasm/web/wasm/iota_sdk_evm_wasm_bg.wasm',
+              to: 'iota_sdk_evm_wasm_bg.wasm'
             }
           ]
         }),
@@ -124,7 +124,7 @@ and then print the node's information.
 ### Node.js
 
 ```javascript
-const {Client, initLogger} = require('@iota/sdk-wasm/node');
+const {Client, initLogger} = require('@iota/sdk-evm-wasm/node');
 
 async function run() {
     initLogger();
@@ -148,7 +148,7 @@ void run().then(() => process.exit());
 ### Web
 
 ```javascript
-import init, {Client, initLogger} from "@iota/sdk-wasm/web";
+import init, {Client, initLogger} from "@iota/sdk-evm-wasm/web";
 
 init().then(async () => {
     initLogger();
@@ -162,10 +162,10 @@ init().then(async () => {
     console.log('Node info: ', nodeInfo);
 }).catch(console.error);
 
-// Default path to load is "iota_sdk_wasm_bg.wasm", 
+// Default path to load is "iota_sdk_evm_wasm_bg.wasm", 
 // but you can override it by passing a path explicitly.
 //
-// init("./static/iota_sdk_wasm_bg.wasm").then(...)
+// init("./static/iota_sdk_evm_wasm_bg.wasm").then(...)
 ```
 
 ## Wallet Usage
@@ -181,7 +181,7 @@ function.
 ### Node.js
 
 ```javascript
-const { Wallet, CoinType } = require('@iota/sdk-wasm/node');
+const { Wallet, CoinType } = require('@iota/sdk-evm-wasm/node');
 
 async function run() {
     try {
@@ -211,7 +211,7 @@ void run().then(() => process.exit());
 ### Web
 
 ```javascript
-import init, {Wallet, CoinType} from "@iota/sdk-wasm/web";
+import init, {Wallet, CoinType} from "@iota/sdk-evm-wasm/web";
 
 init().then(async () => {
     const wallet = await Wallet.create({
@@ -233,10 +233,10 @@ init().then(async () => {
     console.log(addresses);
 }).catch(console.error);
 
-// Default path to load is "iota_sdk_wasm_bg.wasm", 
+// Default path to load is "iota_sdk_evm_wasm_bg.wasm", 
 // but you can override it by passing a path explicitly.
 //
-// init("./static/iota_sdk_wasm_bg.wasm").then(...)
+// init("./static/iota_sdk_evm_wasm_bg.wasm").then(...)
 ```
 
 ## API Reference

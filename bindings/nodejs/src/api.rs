@@ -5,8 +5,8 @@ use std::sync::Arc;
 
 use iota_sdk_evm_bindings_core::{
     call_api_method as rust_call_api_method,
-    iota_sdk::{Url},
-    ApiMethod, Response, iota_sdk_evm::Api,
+    iota_sdk::{client::{ClientBuilder, Error as ClientError}, Url},
+    ApiMethod, Response, iota_sdk_evm::Api, iota_sdk_evm::Error
 };
 use napi::{bindgen_prelude::External, Result};
 use napi_derive::napi;
@@ -18,7 +18,7 @@ pub type ApiMethodHandler = Arc<RwLock<Option<Api>>>;
 
 #[napi(js_name = "createApi")]
 pub async fn create_api(url: String) -> Result<External<ApiMethodHandler>> {
-    let api = Api::new(Url::parse("https://archive.evm.testnet.shimmer.network").unwrap());//serde_json::from_str::<Url>(&url).map_err(NodejsError::new)?);
+    let api = Api::new(Url::parse(&url).map_err(|e| NodejsError::new(Error::ClientError(ClientError::Url(e))))?);
     Ok(External::new(Arc::new(RwLock::new(Some(api)))))
 }
 

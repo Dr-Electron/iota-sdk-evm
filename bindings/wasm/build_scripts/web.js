@@ -3,8 +3,8 @@ const fs = require('fs')
 const { lintAll } = require('./lints')
 const generatePackage = require('./utils/generatePackage');
 
-const rustPackageName = "iota_sdk_wasm";
-const wasmFilename = "iota_sdk_wasm_bg.wasm";
+const rustPackageName = "iota_sdk_evm_wasm";
+const wasmFilename = "iota_sdk_evm_wasm_bg.wasm";
 
 const RELEASE_FOLDER = path.join(__dirname, '../web/wasm/');
 const entryFilePath = path.join(RELEASE_FOLDER, rustPackageName + '.js');
@@ -14,7 +14,7 @@ lintAll(entryFile);
 
 let changedFile = entryFile
     // Comment out generated code as a workaround for webpack (does not recognise import.meta).
-    // Regex to avoid hard-coding 'sdk_wasm_bg.wasm'.
+    // Regex to avoid hard-coding 'sdk_evm_wasm_bg.wasm'.
     .replace(
         /input = new URL\((.*), import\.meta\.url\);/i,
         "// input = new URL($1, import.meta.url);"

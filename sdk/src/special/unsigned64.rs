@@ -9,10 +9,31 @@ use iota_sdk::packable::{
     unpacker::Unpacker,
     Packable,
 };
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serializer, Deserializer, de};
 
-#[derive(Debug, Default, Clone, Eq, PartialEq, PartialOrd, Hash, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Eq, PartialEq, PartialOrd, Hash)]
 pub struct U64Special(u64);
+
+impl serde::Serialize for U64Special {
+    fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        s.serialize_str(&format!("0x{:x}", &self.0))
+    }
+}
+
+impl<'de> Deserialize<'de> for U64Special {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let binding = String::deserialize(deserializer)?;
+        let without_prefix = binding.trim_start_matches("0x");
+        let value = u64::from_str_radix(without_prefix, 16).map_err(de::Error::custom)?;
+        Ok(U64Special(value))
+    }
+}
 
 impl From<u64> for U64Special {
     fn from(value: u64) -> Self {
