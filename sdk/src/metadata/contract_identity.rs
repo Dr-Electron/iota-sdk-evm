@@ -51,6 +51,7 @@ impl Packable for ContractIdentity {
             ContractIdentity::ETH(agent) => agent.pack(packer),
             _ => {
                 self.kind().pack(packer)?;
+                // TODO: Now broken for anything but ETH and Null 
                 packer.pack_bytes(hex::decode(format!("{:?}", self)).unwrap())
             }
         }
