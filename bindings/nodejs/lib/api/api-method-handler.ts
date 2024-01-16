@@ -2,11 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { errorHandle } from '..';
-import {
-    callApiMethod,
-    createApi,
-    destroyApi,
-} from '../bindings';
+import { callApiMethod, createApi, destroyApi } from '../bindings';
 import type { __ApiMethods__ } from '../types/api';
 
 /**
@@ -49,11 +45,10 @@ export class ApiMethodHandler {
      * @returns A promise that resolves to a JSON string response holding the result of the api method.
      */
     async callMethod(method: __ApiMethods__): Promise<string> {
-        return callApiMethod(
-            this.methodHandler,
-            JSON.stringify(method),
-        ).catch((error: any) => {
-            throw errorHandle(error);
-        });
+        return callApiMethod(this.methodHandler, JSON.stringify(method)).catch(
+            (error: any) => {
+                throw errorHandle(error);
+            },
+        );
     }
 }

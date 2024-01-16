@@ -1,10 +1,10 @@
 // Copyright 2021-2023 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-import { Assets, WaspInfo } from '../types';
+import { Assets, ReceiptResponse, RequestMetadata, WaspInfo } from '../types';
 import { ApiMethodHandler } from './api-method-handler';
 
-import { Bech32Address } from '@iota/sdk';
+import { Bech32Address, OutputId } from '@iota/sdk';
 
 /** The Client to interact with nodes. */
 export class Api {
@@ -46,8 +46,53 @@ export class Api {
             name: 'getBalance',
             data: {
                 chain,
-                address
-            }
+                address,
+            },
+        });
+
+        return JSON.parse(response).payload;
+    }
+
+    async estimateGasOnLedger(
+        chain: string,
+        json: object,
+    ): Promise<ReceiptResponse> {
+        const response = await this.methodHandler.callMethod({
+            name: 'estimateGasOnLedger',
+            data: {
+                chain,
+                json,
+            },
+        });
+
+        return JSON.parse(response).payload;
+    }
+
+    async estimateGasOffLedger(
+        chain: string,
+        metadata: RequestMetadata,
+    ): Promise<ReceiptResponse> {
+        const response = await this.methodHandler.callMethod({
+            name: 'estimateGasOffLedger',
+            data: {
+                chain,
+                metadata,
+            },
+        });
+
+        return JSON.parse(response).payload;
+    }
+
+    async getReceipt(
+        chain: string,
+        requestId: OutputId,
+    ): Promise<ReceiptResponse> {
+        const response = await this.methodHandler.callMethod({
+            name: 'getReceipt',
+            data: {
+                chain,
+                requestId,
+            },
         });
 
         return JSON.parse(response).payload;

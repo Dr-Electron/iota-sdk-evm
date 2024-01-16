@@ -9,7 +9,7 @@ use iota_sdk::packable::{
     unpacker::Unpacker,
     Packable,
 };
-use serde::{Deserialize, Serializer, Deserializer, de};
+use serde::{de, Deserialize, Deserializer, Serializer};
 
 #[derive(Debug, Default, Clone, Eq, PartialEq, PartialOrd, Hash)]
 pub struct U64Special(u64);

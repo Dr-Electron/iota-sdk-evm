@@ -11,8 +11,8 @@ export class Utils {
         return callUtilsMethod({
             name: 'specialEncode',
             data: {
-                metadata
-            }
+                metadata,
+            },
         });
     }
 
@@ -20,8 +20,8 @@ export class Utils {
         return callUtilsMethod({
             name: 'hname',
             data: {
-                name
-            }
+                name,
+            },
         });
     }
 
@@ -32,8 +32,9 @@ export class Utils {
         return callUtilsMethod({
             name: 'ethereumAgentId',
             data: {
-                chain, address
-            }
+                chain,
+                address,
+            },
         });
     }
 }

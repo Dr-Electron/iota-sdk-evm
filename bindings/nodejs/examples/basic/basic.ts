@@ -1,24 +1,57 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 
-import { Api, Utils, initLogger, Constants, EvmAddress, NullIdentity, RequestMetadata, Contract } from "@iota/sdk-evm";
+import {
+    Api,
+    Utils,
+    initLogger,
+    Constants,
+    EvmAddress,
+    NullIdentity,
+    RequestMetadata,
+    Contract,
+} from '@iota/sdk-evm';
 
-import { Wallet, Account, SecretManager, WalletOptions, CoinType, Address, SenderFeature, Utils as SdkUtils, TransactionId, Client, Ed25519Address, Bech32Address, AccountAddress } from '@iota/sdk';
+import {
+    Wallet,
+    Account,
+    SecretManager,
+    WalletOptions,
+    CoinType,
+    SenderFeature,
+    Utils as SdkUtils,
+    TransactionId,
+    Client,
+    initLogger as sdkInitLogger,
+    AccountAddress,
+} from '@iota/sdk';
 import { AddressUnlockCondition, BlockId } from '@iota/sdk';
-
 // Run with command:
 // yarn run-example ./basic/basic.ts
 
-// 
+//
 
 // This example uses secrets in environment variables for simplicity which should not be done in production.
 require('dotenv').config({ path: '.env' });
 
+// TODO: Use UnitsHelper.MAGNITUDE_MAP["M"]
+const ONE_MI = BigInt(1000000);
+
 async function run(): Promise<void> {
     try {
         initLogger();
-        for (const envVar of ['MNEMONIC', 'STRONGHOLD_SNAPSHOT_PATH', 'STRONGHOLD_PASSWORD', 'WALLET_DB_PATH', 'NODE_URL', 'WASP_NODE']) {
+        sdkInitLogger();
+        for (const envVar of [
+            'MNEMONIC',
+            'STRONGHOLD_SNAPSHOT_PATH',
+            'STRONGHOLD_PASSWORD',
+            'WALLET_DB_PATH',
+            'NODE_URL',
+            'WASP_NODE',
+        ]) {
             if (!(envVar in process.env)) {
-                throw new Error(`.env ${envVar} is undefined, see .env.example`);
+                throw new Error(
+                    `.env ${envVar} is undefined, see .env.example`,
+                );
             }
         }
 
@@ -39,7 +72,7 @@ async function run(): Promise<void> {
             storagePath: process.env.WALLET_DB_PATH,
             clientOptions: {
                 nodes: [process.env.NODE_URL!],
-                ignoreNodeHealth: true
+                ignoreNodeHealth: true,
             },
             coinType: CoinType.Shimmer,
             secretManager: strongholdSecretManager,
@@ -50,67 +83,109 @@ async function run(): Promise<void> {
         let accounts = await wallet.getAccounts();
         let account;
         if (accounts.length == 0) {
-            account = await wallet.createAccount({})
+            account = await wallet.createAccount({});
         } else {
             account = accounts[0];
         }
 
-        let accountAddrs = await account.generateEd25519Addresses(2);
-
         let balance = await account.sync();
+
+        //let accountAddrs = await account.generateEd25519Addresses(2);
+        let accountAddrs = await account.addresses();
         let accountAddr = accountAddrs[0];
         console.log(`Using addr: '${accountAddr.address}'`);
 
         // Prefixed with 0x
-        let evm_address = await secretManager
-            .generateEvmAddresses({
-                range: {
-                    start: accountAddr.keyIndex,
-                    end: accountAddr.keyIndex + 1,
-                }
-            });
+        let evm_address = await secretManager.generateEvmAddresses({
+            range: {
+                start: accountAddr.keyIndex,
+                end: accountAddr.keyIndex + 1,
+            },
+        });
 
         console.log(`Using evm address: '${evm_address}'`);
 
         let api = await Api.create(process.env.WASP_NODE as string);
         let client = await wallet.getClient();
 
-        if (balance.baseCoin.available > 0) {
-            // 225053825 glow -> 220.053826 SMR ( 4999999 gas fee + 0.01 fee on evm )
+        if (balance.baseCoin.available > ONE_MI) {
+            console.log(`Available balance: '${balance.baseCoin.available}'`);
 
-            console.log(`Available balance: '${balance.baseCoin.available / BigInt(2)}'`);
+            let assetsPre = await api.getBalance(
+                Constants.TESTNET_CHAIN_ADDRESS,
+                accountAddr.address,
+            );
+            console.log('EVM balance pre:', assetsPre);
 
-            // 56171331 -> 56143231
-            // = 28100 = 28000 + MIN_GAS_FEE
-
-            let assetsPre = await api.getBalance(Constants.TESTNET_CHAIN_ADDRESS, accountAddr.address);
-            console.log('EVM balance pre:' , assetsPre);
-
-            let to_send = BigInt(1000); //balance.base_coin().available() / BigInt(2);
-            console.log(`Sending: '${to_send}'`);
-            let _blockId = await sendToEVM(account, client, to_send, accountAddr);
-
-            // Wasp node updates after at most 1 more milestone
-            console.log("await 1 milestone...");
-            await oneMilestone(await wallet.getClient());
-
-            let assetsPost = await api.getBalance(Constants.TESTNET_CHAIN_ADDRESS, accountAddr.address);
-            console.log('EVM balance post: ', assetsPost);
-
-            console.log("------[ WITHDRAW ]---------");
-
-            _blockId = await withdrawFromEvm(account, client, assetsPost.baseTokens, accountAddr);
+            console.log(`Sending: '${ONE_MI}'`);
+            let _blockId = await sendToEVM(
+                account,
+                client,
+                ONE_MI,
+                accountAddr,
+            );
 
             // Wasp node updates after at most 1 more milestone
-            console.log("await 1 milestone...");
+            console.log('await 1 milestone...');
             await oneMilestone(await wallet.getClient());
+            let balancePost = await account.sync();
+            console.log(
+                `Available balance POST: '${balancePost.baseCoin.available}'`,
+            );
+            console.log(
+                `Available balance DIFF: '${
+                    balance.baseCoin.available - balancePost.baseCoin.available
+                }'`,
+            );
 
-            assetsPost = await api.getBalance(Constants.TESTNET_CHAIN_ADDRESS, accountAddr.address);
-            console.log('EVM balance post withdraw: ', assetsPost);
+            let assetsPost = await api.getBalance(
+                Constants.TESTNET_CHAIN_ADDRESS,
+                accountAddr.address,
+            );
+            console.log('EVM balance POST: ', assetsPost);
+            console.log(
+                'EVM balance DIFF: ',
+                assetsPost.baseTokens - assetsPre.baseTokens,
+            );
 
+            console.log('------[ WITHDRAW ]---------');
+
+            _blockId = await withdrawFromEvm(
+                account,
+                api,
+                client,
+                BigInt(assetsPre.baseTokens),
+                accountAddr,
+            );
+
+            // Wasp node updates after at most 1 more milestone
+            console.log('await 1 milestone...');
+            await oneMilestone(await wallet.getClient());
+            let balancePost2 = await account.sync();
+            console.log(
+                `Available balance POST2: '${balancePost2.baseCoin.available}'`,
+            );
+            console.log(
+                `Available balance DIFF: '${
+                    balancePost2.baseCoin.available - balance.baseCoin.available
+                }'`,
+            );
+
+            let assetsPost2 = await api.getBalance(
+                Constants.TESTNET_CHAIN_ADDRESS,
+                accountAddr.address,
+            );
+            console.log('EVM balance post withdraw: ', assetsPost2);
+            console.log(
+                'EVM balance DIFF: ',
+                assetsPost2.baseTokens - assetsPre.baseTokens,
+            );
         } else {
             console.log('no available balance. top up at', accountAddr.address);
-            client.requestFundsFromFaucet(process.env.FAUCET_URL!, accountAddr.address);
+            client.requestFundsFromFaucet(
+                process.env.FAUCET_URL!,
+                accountAddr.address,
+            );
         }
     } catch (err) {
         console.error(err);
@@ -118,25 +193,84 @@ async function run(): Promise<void> {
 }
 
 // Example translation for withdraw function
-async function withdrawFromEvm(account: Account, client: Client, amount: bigint, fromAddr: AccountAddress): Promise<BlockId> {
+async function withdrawFromEvm(
+    account: Account,
+    api: Api,
+    client: Client,
+    amount: bigint,
+    fromAddr: AccountAddress,
+): Promise<BlockId> {
     const metadata = withdraw(amount);
-    
-    const outputs = [
+    console.log(metadata);
+
+    //let gasFee = await api.estimateGasOffLedger(Constants.TESTNET_CHAIN_ADDRESS, metadata);
+    //console.log(gasFee);
+
+    let outputs = [
         await client.buildBasicOutput({
-            unlockConditions: [new AddressUnlockCondition(
-                SdkUtils.parseBech32Address(Constants.TESTNET_CHAIN_ADDRESS),
-            )],
+            unlockConditions: [
+                new AddressUnlockCondition(
+                    SdkUtils.parseBech32Address(
+                        Constants.TESTNET_CHAIN_ADDRESS,
+                    ),
+                ),
+            ],
             features: [
-                    metadata.asFeature(),
-                    new SenderFeature(SdkUtils.parseBech32Address(fromAddr.address)),
-                ],
-        })
+                metadata.asFeature(),
+                new SenderFeature(
+                    SdkUtils.parseBech32Address(fromAddr.address),
+                ),
+            ],
+        }),
     ];
+    console.log(outputs);
+    const minDeposit = await client.minimumRequiredStorageDeposit(outputs[0]);
+    console.log(minDeposit);
+    metadata.allowance.baseTokens += BigInt(minDeposit);
+    console.log(metadata);
+    console.log(metadata.asFeature());
+
+    outputs = [
+        await client.buildBasicOutput({
+            amount: BigInt(minDeposit) + Constants.MIN_GAS_FEE, // Use gasFee instead
+            unlockConditions: [
+                new AddressUnlockCondition(
+                    SdkUtils.parseBech32Address(
+                        Constants.TESTNET_CHAIN_ADDRESS,
+                    ),
+                ),
+            ],
+            features: [
+                metadata.asFeature(),
+                new SenderFeature(
+                    SdkUtils.parseBech32Address(fromAddr.address),
+                ),
+            ],
+        }),
+    ];
+    console.log(outputs);
 
     const transaction = await account.sendOutputs(outputs);
-    console.log('Transaction sent:', `${process.env.EXPLORER_URL}/${transaction.transactionId}`);
+    console.log(transaction);
+    console.log(
+        'Transaction sent:',
+        `${process.env.EXPLORER_URL}/${transaction.transactionId}`,
+    );
 
     return wait(account, transaction.transactionId);
+}
+
+// Example translation for withdraw function
+
+function withdraw(amount: bigint): RequestMetadata {
+    const metadata = new RequestMetadata(
+        NullIdentity,
+        Contract.Accounts,
+        'withdraw',
+        Constants.MIN_GAS_FEE * BigInt(100),
+    );
+    metadata.allowance.baseTokens = amount;
+    return metadata;
 }
 
 async function sendToEVM(
@@ -144,29 +278,32 @@ async function sendToEVM(
     client: Client,
     amount: bigint,
     fromAddr: AccountAddress,
-    toAddress?: EvmAddress
+    toAddress?: EvmAddress,
 ): Promise<BlockId> {
-    const metadata = toAddress
-        ? depositTo(amount, toAddress)
-        : deposit(amount);
-    
-    const outputs = [
+    const metadata = toAddress ? depositTo(amount, toAddress) : deposit(amount);
+
+    let outputs = [
         await client.buildBasicOutput({
-            unlockConditions: [new AddressUnlockCondition(
-                SdkUtils.parseBech32Address(Constants.TESTNET_CHAIN_ADDRESS)
-            )],
+            amount: metadata.allowance.baseTokens,
+            unlockConditions: [
+                new AddressUnlockCondition(
+                    SdkUtils.parseBech32Address(
+                        Constants.TESTNET_CHAIN_ADDRESS,
+                    ),
+                ),
+            ],
             features: [
-                    metadata.asFeature(),
-                    new SenderFeature(SdkUtils.parseBech32Address(fromAddr.address)),
-                ],
-        })
+                metadata.asFeature(),
+                new SenderFeature(
+                    SdkUtils.parseBech32Address(fromAddr.address),
+                ),
+            ],
+        }),
     ];
 
     const transaction = await account.sendOutputs(outputs);
     console.log(
-        `Transaction sent: ${process.env.EXPLORER_URL}/transaction/${
-        transaction.transactionId
-        }`
+        `Transaction sent: ${process.env.EXPLORER_URL}/transaction/${transaction.transactionId}`,
     );
 
     return wait(account, transaction.transactionId);
@@ -182,29 +319,17 @@ async function wait(account: Account, tx: TransactionId): Promise<BlockId> {
     let blockId = await account.retryTransactionUntilIncluded(tx);
 
     console.log(`Block included: ${process.env.EXPLORER_URL}/block/${blockId}`);
-    return blockId
-}
-
-// Example translation for withdraw function
-function withdraw(amount: bigint): RequestMetadata {
-    const metadata = new RequestMetadata(
-        NullIdentity,
-        Contract.Account,
-        'withdraw',
-        Constants.MIN_GAS_FEE,
-    );
-    metadata.allowance.baseTokens = amount - Constants.MIN_GAS_FEE;
-    return metadata;
+    return blockId;
 }
 
 function deposit(amount: bigint): RequestMetadata {
     const metadata = new RequestMetadata(
         NullIdentity,
-        Contract.Account,
+        Contract.Accounts,
         'deposit',
-        Constants.MIN_GAS_FEE,
+        Constants.MIN_GAS_FEE * BigInt(100),
     );
-    metadata.allowance.baseTokens = amount - Constants.MIN_GAS_FEE;
+    metadata.allowance.baseTokens = amount;
 
     return metadata;
 }
@@ -212,9 +337,9 @@ function deposit(amount: bigint): RequestMetadata {
 function depositTo(amount: bigint, address: EvmAddress): RequestMetadata {
     const metadata = new RequestMetadata(
         NullIdentity,
-        Contract.Account,
+        Contract.Accounts,
         'transferAllowanceTo',
-        Constants.MIN_GAS_FEE,
+        Constants.MIN_GAS_FEE * BigInt(100),
     );
     metadata.params.set(
         'a',
@@ -223,10 +348,9 @@ function depositTo(amount: bigint, address: EvmAddress): RequestMetadata {
             address,
         ),
     );
-    metadata.allowance.baseTokens = amount - Constants.MIN_GAS_FEE;
+    metadata.allowance.baseTokens = amount;
 
     return metadata;
 }
-
 
 void run().then(() => process.exit());

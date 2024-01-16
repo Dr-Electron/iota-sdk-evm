@@ -12,7 +12,7 @@ const {
     initLogger,
     createApi,
     destroyApi,
-    callApiMethod
+    callApiMethod,
 } = addon;
 
 const callUtilsMethod = (method: __UtilsMethods__): any => {
@@ -26,10 +26,4 @@ const callUtilsMethod = (method: __UtilsMethods__): any => {
     }
 };
 
-export {
-    initLogger,
-    createApi,
-    destroyApi,
-    callApiMethod,
-    callUtilsMethod,
-};
+export { initLogger, createApi, destroyApi, callApiMethod, callUtilsMethod };

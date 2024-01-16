@@ -1,13 +1,7 @@
+abstract class ContractIdentity {}
 
-abstract class ContractIdentity {
-}
+class NullIdentity extends ContractIdentity {}
 
-class NullIdentity extends ContractIdentity {
+class EvmIdentity extends ContractIdentity {}
 
-}
-
-class EvmIdentity extends ContractIdentity {
-
-}
-
-export { ContractIdentity, NullIdentity, EvmIdentity }
+export { ContractIdentity, NullIdentity, EvmIdentity };

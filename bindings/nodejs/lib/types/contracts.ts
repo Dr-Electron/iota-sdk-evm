@@ -1,3 +1,3 @@
 export enum Contract {
-    Account = "account"
+    Accounts = 'accounts',
 }

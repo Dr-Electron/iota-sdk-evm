@@ -115,17 +115,22 @@ impl Packable for Assets {
         if self.has_base_tokens() {
             U64Special::pack(&self.base_tokens, packer)?;
         }
+
         if let Some(tokens) = self.get_native_tokens() {
-            U64Special::pack(&(tokens.len() as u64).into(), packer)?;
-            for token in tokens {
-                token.token_id().pack(packer)?;
-                U256Special::from(token.amount()).pack(packer)?;
+            if !tokens.is_empty() {
+                U64Special::pack(&(tokens.len() as u64).into(), packer)?;
+                for token in tokens {
+                    token.token_id().pack(packer)?;
+                    U256Special::from(token.amount()).pack(packer)?;
+                }
             }
         }
         if let Some(nfts) = self.get_nfts() {
-            U64Special::pack(&(nfts.len() as u64).into(), packer)?;
-            for nft in nfts {
-                nft.pack(packer)?;
+            if !nfts.is_empty() {
+                U64Special::pack(&(nfts.len() as u64).into(), packer)?;
+                for nft in nfts {
+                    nft.pack(packer)?;
+                }
             }
         }
         Ok(())
@@ -166,10 +171,11 @@ impl Packable for Assets {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct AssetsDto {
     #[serde(with = "iota_sdk::utils::serde::string")]
     pub base_tokens: u64,
+    pub nfts: Option<Vec<String>>,
     pub native_tokens: Vec<String>,
 }

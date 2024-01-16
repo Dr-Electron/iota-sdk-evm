@@ -146,6 +146,7 @@ mod tests {
     #[tokio::test]
     async fn hnames() {
         assert_eq!(hname(ACCOUNTS), 1011572226);
+        assert_eq!(hname("withdraw"), 2647396161);
         assert_eq!(hname("transferAllowanceTo"), 603251617);
     }
 
@@ -154,16 +155,17 @@ mod tests {
         assert_eq!(
             serde_json::from_str::<serde_json::Value>(&serde_json::to_string(&get_metadata()).unwrap()).unwrap(),
             serde_json::json!({
-                "sender_contract": "00",
-                "target_contract": 1011572226,
-                "target_entry_point": 603251617,
-                "gas_budget": 10000,
+                "senderContract": "00",
+                "targetContract": 1011572226,
+                "targetEntryPoint": 603251617,
+                "gasBudget": "0x2710",
                 "params": {
-                    "a": [3,225,76,52,153,52,156,184,210,253,119,30,9,130,152,131,228,236,250,224,46,107,9,201,182,160,251,60,117,4,180,226,244,233,19,202,197,158,11,168,64,3,154,221,100,93,93,248,60,41,76,194,48]
+                    "a": [3,225,76,52,153,52,156,184,210,253,119,30,9,130,152,131,228,236,250,224,46,107,9,201,182,160,251,60,117,4,
+                    180,226,244,233,19,202,197,158,11,168,64,3,154,221,100,93,93,248,60,41,76,194,48]
                 },
                 "allowance": {
-                    "base_tokens": 0,
-                    "native_tokens": [{
+                    "baseTokens": "0x0",
+                    "nativeTokens": [{
                         "id": "0x08e14c3499349cb8d2fd771e09829883e4ecfae02e6b09c9b6a0fb3c7504b4e2f40100000000",
                         "amount": "0x32"
                     }],
@@ -179,7 +181,7 @@ mod tests {
         let buf = metadata.pack_to_vec();
         assert_eq!(hex::decode(SER).unwrap(), buf);
     }
-
+    //
     #[tokio::test]
     async fn unpack() {
         let new_meta = RequestMetadata::unpack_unverified(hex::decode(SER).unwrap()).unwrap();
@@ -188,11 +190,29 @@ mod tests {
 
     #[tokio::test]
     async fn unpack_ics() {
+        let data = RequestMetadata::new(ContractIdentity::ISC(hname(ACCOUNTS)), None, None, 0);
+
+        let enc = prefix_hex::encode(data.pack_to_vec());
+        assert_eq!("0x00025e4b3c410fcc9d914e008098d04f", enc);
+
         let new_meta = RequestMetadata::unpack_unverified(hex::decode("010000000066bc2cde68027a052c88da011b6711b2c7828cae15d0faea53831f9c24902da9a488dfbbc169edab010000000100000001000000010000000000").unwrap()).unwrap();
         assert_eq!(
             RequestMetadata::new(ContractIdentity::ISC(hname(ACCOUNTS)), None, None, 0),
             new_meta
         );
+    }
+
+    #[tokio::test]
+    async fn withdraw() {
+        let mut metadata = RequestMetadata::new(
+            ContractIdentity::Null,
+            ACCOUNTS.to_string(),
+            "withdraw".to_string(),
+            10000,
+        );
+        metadata.allowance.set_base_tokens(1304600);
+        let enc = prefix_hex::encode(metadata.pack_to_vec());
+        assert_eq!("0x00025e4b3c410fcc9d914e008098d04f", enc);
     }
 
     fn get_metadata() -> RequestMetadata {
@@ -202,11 +222,11 @@ mod tests {
             "transferAllowanceTo".to_string(),
             10000,
         );
-
+        //
         let mut bytes = [0u8; 20];
         bytes.copy_from_slice(&hex::decode("E913CAc59E0bA840039aDD645D5df83C294CC230").unwrap());
         let evm_addr = EvmAddress::from(bytes);
-
+        //
         metadata.params.insert(
             "a".to_string(),
             ethereum_agent_id(

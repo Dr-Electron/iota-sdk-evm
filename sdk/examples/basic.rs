@@ -24,7 +24,7 @@ use iota_sdk::{
         output::{
             feature::{MetadataFeature, SenderFeature},
             unlock_condition::AddressUnlockCondition,
-            BasicOutputBuilder, Feature,
+            BasicOutputBuilder, Feature, OutputId,
         },
         payload::transaction::TransactionId,
         BlockId,
@@ -33,7 +33,8 @@ use iota_sdk::{
     Wallet,
 };
 use iota_sdk_evm::{
-    ethereum_agent_id, Api, ContractIdentity, EvmAddress, RequestMetadata, Result, ACCOUNTS, TESTNET_CHAIN_ADDRESS,
+    ethereum_agent_id, Api, ContractIdentity, EvmAddress, RequestMetadata, Result, ACCOUNTS, MIN_GAS_FEE,
+    TESTNET_CHAIN_ADDRESS,
 };
 use url::Url;
 
@@ -72,7 +73,7 @@ async fn main() -> Result<()> {
     let account_addrs = account.generate_ed25519_addresses(2, None).await?;
 
     let balance = account.sync(None).await?;
-    let account_addr = &account_addrs[0];
+    let account_addr = &account.addresses().await?[0];
     println!("Using addr: '{:?}'", account_addr.address());
 
     let evm_address = wallet
@@ -96,19 +97,17 @@ async fn main() -> Result<()> {
     // println!("wasp node: '{:?}'", api.info().await?);
 
     if balance.base_coin().available() > 0 {
-        // 225053825 glow -> 220.053826 SMR ( 4999999 gas fee + 0.01 fee on evm )
-
-        println!("Available balance: '{:?}'", balance.base_coin().available() / 2);
-
-        // 56171331 -> 56143231
-        // = 28100 = 28000 + MIN_GAS_FEE
+        println!("Available balance: '{:?}'", balance.base_coin().available());
 
         let assets_pre = api.get_balance(TESTNET_CHAIN_ADDRESS, *account_addr.address()).await?;
         println!("EVM balance pre: '{:?}'", assets_pre);
 
-        let to_send = 1000; //balance.base_coin().available() / 2;
+        let to_send = 1000000;
         println!("Sending: '{:?}'", to_send);
+        // Send to an address
         // let _ = send_to_evm(&account, to_send, account_addr, Some(&evm_addr)).await?;
+
+        // Send on our own l2 linked account
         let _ = send_to_evm(&account, to_send, account_addr, None).await?;
 
         // Wasp node updates after at most 1 more milestone
@@ -120,7 +119,7 @@ async fn main() -> Result<()> {
 
         println!("------[ WITHDRAW ]---------");
 
-        let _ = withdraw_from_evm(&account, assets_post.base_tokens, account_addr).await?;
+        let _ = withdraw_from_evm(&account, &api, assets_post.base_tokens, account_addr).await?;
 
         // Wasp node updates after at most 1 more milestone
         println!("await 1 milestone...");
@@ -138,11 +137,30 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn withdraw_from_evm(account: &Account, amount: u64, from_addr: &AccountAddress) -> Result<BlockId> {
+async fn withdraw_from_evm(account: &Account, api: &Api, amount: u64, from_addr: &AccountAddress) -> Result<BlockId> {
     let protocol_parameters = account.client().get_protocol_parameters().await?;
-    let metadata = withdraw(amount);
+    let mut metadata = withdraw(amount);
+    // let gas_fee = api.estimate_gas_off_ledger(TESTNET_CHAIN_ADDRESS, &metadata).await?;
+    // println!("{:?}", gas_fee);
+
+    println!("{:?}", metadata);
+    let deposit = BasicOutputBuilder::new_with_minimum_storage_deposit(protocol_parameters.rent_structure().clone())
+        .add_unlock_condition(AddressUnlockCondition::from(
+            Bech32Address::from_str(TESTNET_CHAIN_ADDRESS)?.inner().clone(),
+        ))
+        .with_features([
+            Feature::from(MetadataFeature::new(metadata.pack_to_vec())?),
+            Feature::from(SenderFeature::new(from_addr.address().clone())),
+        ])
+        .finish()?
+        .amount();
+    println!("{:?}", deposit);
+    metadata
+        .allowance
+        .set_base_tokens(metadata.allowance.get_base_tokens() + deposit);
+
     let outputs = [
-        BasicOutputBuilder::new_with_minimum_storage_deposit(protocol_parameters.rent_structure().clone())
+        BasicOutputBuilder::new_with_amount(deposit + MIN_GAS_FEE * 100) // use gas_fee instead
             .add_unlock_condition(AddressUnlockCondition::from(
                 Bech32Address::from_str(TESTNET_CHAIN_ADDRESS)?.inner().clone(),
             ))
@@ -150,10 +168,10 @@ async fn withdraw_from_evm(account: &Account, amount: u64, from_addr: &AccountAd
                 Feature::from(MetadataFeature::new(metadata.pack_to_vec())?),
                 Feature::from(SenderFeature::new(from_addr.address().clone())),
             ])
-            .finish()
-            .unwrap()
+            .finish()?
             .into(),
     ];
+    println!("{:?}", outputs);
 
     let transaction = account.send_outputs(outputs, None).await?;
     println!(
@@ -225,9 +243,11 @@ fn withdraw(amount: u64) -> RequestMetadata {
         ContractIdentity::Null,
         ACCOUNTS.to_string(),
         "withdraw".to_string(),
-        500,
+        MIN_GAS_FEE * 100,
     );
-    metadata.allowance.set_base_tokens(amount);
+    metadata
+        .allowance
+        .set_base_tokens(amount - (iota_sdk_evm::MIN_GAS_FEE * 100));
     metadata
 }
 
@@ -236,7 +256,7 @@ fn deposit(amount: u64) -> RequestMetadata {
         ContractIdentity::Null,
         ACCOUNTS.to_string(),
         "deposit".to_string(),
-        iota_sdk_evm::MIN_GAS_FEE,
+        MIN_GAS_FEE * 100,
     );
     metadata.allowance.set_base_tokens(amount - iota_sdk_evm::MIN_GAS_FEE);
 

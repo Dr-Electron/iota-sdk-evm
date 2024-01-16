@@ -1,5 +1,5 @@
-import { RequestMetadata } from "../..";
-import { EvmAddress } from "../../address";
+import { RequestMetadata } from '../..';
+import { EvmAddress } from '../../address';
 
 export interface __EthereumAgentIdMethod__ {
     name: 'ethereumAgentId';
@@ -22,4 +22,3 @@ export interface __HnameMethod__ {
         name: string;
     };
 }
-

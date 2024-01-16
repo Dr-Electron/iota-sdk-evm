@@ -11,6 +11,7 @@ pub(crate) fn call_utils_method_internal(method: UtilsMethod) -> Result<Response
     let response = match method {
         UtilsMethod::EthereumAgentId { chain, address } => {
             match address {
+                ContractIdentity::Null => Response::BytesArray(vec![]),
                 ContractIdentity::EVM(a) => {
                     Response::BytesArray(ethereum_agent_id(&chain, &a))
                 },
