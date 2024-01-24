@@ -25,10 +25,9 @@ import {
     AccountAddress,
 } from '@iota/sdk';
 import { AddressUnlockCondition, BlockId } from '@iota/sdk';
+
 // Run with command:
 // yarn run-example ./basic/basic.ts
-
-//
 
 // This example uses secrets in environment variables for simplicity which should not be done in production.
 require('dotenv').config({ path: '.env' });

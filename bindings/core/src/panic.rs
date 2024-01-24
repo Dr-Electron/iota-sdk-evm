@@ -62,7 +62,10 @@ mod tests {
 
     #[tokio::test]
     async fn panic_to_response() {
-        match convert_async_panics(|| async { panic!("rekt") }).await.unwrap() {
+        match convert_async_panics(|| async { panic!("rekt") })
+            .await
+            .unwrap()
+        {
             Response::Panic(msg) => {
                 assert!(msg.contains("rekt"));
             }

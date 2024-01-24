@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use iota_sdk_evm_bindings_core::{
     call_api_method as rust_call_api_method,
-    iota_sdk::{client::{ClientBuilder, Error as ClientError}, Url},
+    iota_sdk::{client::{Error as ClientError}, Url},
     ApiMethod, Response, iota_sdk_evm::Api, iota_sdk_evm::Error
 };
 use napi::{bindgen_prelude::External, Result};

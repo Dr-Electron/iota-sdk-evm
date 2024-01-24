@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use derivative::Derivative;
-use iota_sdk::types::block::address::Bech32Address;
-use iota_sdk_evm::{AssetsDto, WaspInfo};
+use iota_sdk_evm::{AssetsDto, ReceiptResponse, WaspInfo};
 use serde::Serialize;
 
 use crate::Error;
@@ -30,8 +29,10 @@ pub enum Response {
     /// - [`EthereumAgentId`](crate::method::Utils::EthereumAgentId)
     BytesArray(Vec<u8>),
     /// Response for:
-    /// - [`GenerateEd25519Addresses`](crate::method::api::GenerateEd25519Addresses)
-    GeneratedEd25519Addresses(Vec<Bech32Address>),
+    /// - [`EstimateGasOnLedger`](crate::method::Api::EstimateGasOnLedger)
+    /// - [`EstimateGasOffLedger`](crate::method::Api::EstimateGasOffLedger)
+    /// - [`GetReceipt`](crate::method::Api::GetReceipt)
+    Receipt(ReceiptResponse),
     Ok,
     /// Response for any method that returns an error.
     Error(Error),

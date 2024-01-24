@@ -2,9 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use derivative::Derivative;
-use iota_sdk_evm::{RequestMetadata, EvmAddress, ContractIdentity};
+use iota_sdk_evm::{ContractIdentity, RequestMetadata};
 use serde::{Deserialize, Serialize};
-
 
 /// Each public utils method.
 #[derive(Clone, Derivative, Serialize, Deserialize)]
@@ -12,7 +11,14 @@ use serde::{Deserialize, Serialize};
 #[serde(tag = "name", content = "data", rename_all = "camelCase")]
 #[non_exhaustive]
 pub enum UtilsMethod {
-    EthereumAgentId { chain: String, address: ContractIdentity },
-    Hname { name: String },
-    SpecialEncode { metadata: RequestMetadata },
+    EthereumAgentId {
+        chain: String,
+        address: ContractIdentity,
+    },
+    Hname {
+        name: String,
+    },
+    SpecialEncode {
+        metadata: RequestMetadata,
+    },
 }

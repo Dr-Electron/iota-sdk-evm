@@ -3,28 +3,32 @@
 
 use std::pin::Pin;
 
-use futures::Future;
-use iota_sdk_evm::Api;
 use crate::{
     method::{ApiMethod, UtilsMethod},
-    method_handler::{
-        api::call_api_method_internal, utils::call_utils_method_internal
-    },
+    method_handler::{api::call_api_method_internal, utils::call_utils_method_internal},
     panic::{convert_async_panics, convert_panics},
-    response::Response
+    response::Response,
 };
+use futures::Future;
+use iota_sdk_evm::Api;
 
 pub trait CallMethod {
     type Method;
 
     // This uses a manual async_trait-like impl because it's not worth it to import the lib for one trait
-    fn call_method<'a>(&'a self, method: Self::Method) -> Pin<Box<dyn Future<Output = Response> + 'a>>;
+    fn call_method<'a>(
+        &'a self,
+        method: Self::Method,
+    ) -> Pin<Box<dyn Future<Output = Response> + 'a>>;
 }
 
 impl CallMethod for Api {
     type Method = ApiMethod;
 
-    fn call_method<'a>(&'a self, method: Self::Method) -> Pin<Box<dyn Future<Output = Response> + 'a>> {
+    fn call_method<'a>(
+        &'a self,
+        method: Self::Method,
+    ) -> Pin<Box<dyn Future<Output = Response> + 'a>> {
         Box::pin(call_api_method(self, method))
     }
 }
@@ -32,7 +36,8 @@ impl CallMethod for Api {
 /// Call an api method.
 pub async fn call_api_method(api: &Api, method: ApiMethod) -> Response {
     log::debug!("Api method: {method:?}");
-    let result = convert_async_panics(|| async { call_api_method_internal(api, method).await }).await;
+    let result =
+        convert_async_panics(|| async { call_api_method_internal(api, method).await }).await;
 
     let response = result.unwrap_or_else(Response::Error);
 

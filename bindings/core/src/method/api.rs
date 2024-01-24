@@ -3,8 +3,9 @@
 
 use derivative::Derivative;
 use iota_sdk::{
-    utils::serde::{option_string, string}, types::block::address::Bech32Address,
+    types::block::{address::Bech32Address, output::OutputId},
 };
+use iota_sdk_evm::RequestMetadata;
 use serde::{Deserialize, Serialize};
 
 /// Each public api method.
@@ -16,17 +17,21 @@ pub enum ApiMethod {
     /// Expected response: [`WaspInfo`](crate::Response::WaspInfo)
     GetInfo,
     /// Expected response: [`Assets`](crate::Response::Assets)
-    GetBalance {chain: String, address: Bech32Address },
-    /// Build an AccountOutput.
-    /// Expected response: [`Output`](crate::Response::Output)
-    #[allow(missing_docs)]
-    #[serde(rename_all = "camelCase")]
-    BuildAccountOutput {
-        // If not provided, minimum amount will be used
-        #[serde(default, with = "option_string")]
-        amount: Option<u64>,
-        // TODO: Determine if `default` is wanted here
-        #[serde(default, with = "string")]
-        mana: u64,
+    GetBalance {
+        chain: String,
+        address: Bech32Address,
     },
+    /// Expected response: [`Receipt`](crate::Response::Receipt)
+    EstimateGasOnLedger {
+        chain: String,
+        json: serde_json::Value,
+    },
+    /// Expected response: [`Receipt`](crate::Response::Receipt)
+    EstimateGasOffLedger {
+        chain: String,
+        metadata: RequestMetadata,
+    },
+    /// Expected response: [`Receipt`](crate::Response::Receipt)
+    #[serde(rename_all = "camelCase")]
+    GetReceipt { chain: String, request_id: OutputId },
 }

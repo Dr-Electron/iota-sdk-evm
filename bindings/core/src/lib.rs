@@ -13,10 +13,8 @@ use std::fmt::{Formatter, Result as FmtResult};
 
 use fern_logger::{logger_init, LoggerConfig, LoggerOutputConfigBuilder};
 pub use iota_sdk;
+use iota_sdk::client::secret::SecretManagerDto;
 pub use iota_sdk_evm;
-use iota_sdk::{
-    client::secret::{SecretManagerDto},
-};
 
 #[cfg(not(target_family = "wasm"))]
 pub use self::method_handler::CallMethod;
@@ -30,7 +28,8 @@ pub use self::{
 };
 
 pub fn init_logger(config: String) -> std::result::Result<(), fern_logger::Error> {
-    let output_config: LoggerOutputConfigBuilder = serde_json::from_str(&config).expect("invalid logger config");
+    let output_config: LoggerOutputConfigBuilder =
+        serde_json::from_str(&config).expect("invalid logger config");
     let config = LoggerConfig::build().with_output(output_config).finish();
     logger_init(config)
 }

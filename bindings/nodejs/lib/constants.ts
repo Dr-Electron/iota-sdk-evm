@@ -14,4 +14,8 @@ export const ISC_ERC721_ADDRESS: string =
 export const TESTNET_CHAIN_ADDRESS: string =
     'rms1ppp00k5mmd2m8my8ukkp58nd3rskw6rx8l09aj35984k74uuc5u2cywn3ex';
 
+// The base chain address from the mainnet to which metadata tx should be sent
+export const MAINNET_CHAIN_ADDRESS: string =
+    'smr1prxvwqvwf7nru5q5xvh5thwg54zsm2y4wfnk6yk56hj3exxkg92mx20wl3s';
+
 export const MIN_GAS_FEE: bigint = BigInt(100); // 0.0001 smr
