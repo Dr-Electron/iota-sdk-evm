@@ -35,6 +35,9 @@ async function run(): Promise<void> {
             }
         }
 
+        // Not currently working
+        // console.log(await api.getInfo());
+
         let api = await Api.create(process.env.WASP_NODE as string);
         console.log(await api.getReceipt(Constants.TESTNET_CHAIN_ADDRESS, "0x49f2b03ff9fc646ffaf54a8da752ba50c8e112fac3ef82b06025d819be2b3d130000"))
 

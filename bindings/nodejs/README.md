@@ -1,4 +1,4 @@
-# IOTA SDK Library - Node.js binding
+# IOTA SDK EVM Library - Node.js binding
 
 ## Table of contents
 
@@ -12,8 +12,7 @@
       - [Yarn](#yarn)
     - [Install the Binding from Source](#install-the-binding-from-source)
       - [Build nodejs bindings](#build-nodejs-bindings)
-  - [Client Usage](#client-usage)
-  - [Wallet Usage](#wallet-usage)
+  - [Api Usage](#api-usage)
   - [Examples](#examples)
   - [API Reference](#api-reference)
   - [Available Scripts](#available-scripts)
@@ -49,13 +48,13 @@ To install the library from your package manager of choice, you only need to run
 #### npm
 
 ```sh
-npm i @iota/sdk
+npm i @iota/sdk-evm
 ```
 
 #### Yarn:
 
 ```sh
-yarn add @iota/sdk
+yarn add @iota/sdk-evm
 ```
 
 ### Install the Binding from Source
@@ -76,26 +75,24 @@ npm run build
 This command uses the napi build utility to run the Rust build and copy the built library into `./build/Release/index.node`.
 Prebuild requires that the binary is in `build/Release` as though it was built with node-gyp.
 
-## Client Usage
+## Api Usage
 
-The following example creates a [`Client`](https://wiki.iota.org/shimmer/iota-sdk/references/nodejs/classes/Client/)
+The following example creates an [`Api`](https://wiki.iota.org/shimmer/iota-sdk-evm/references/nodejs/classes/Api/)
 instance connected to
 the [Shimmer Testnet](https://api.testnet.shimmer.network), and retrieves the node's information by
-calling [`Client.getInfo()`](https://wiki.iota.org/shimmer/iota-sdk/references/nodejs/classes/Client/#getinfo),
+calling [`Api.getInfo()`](https://wiki.iota.org/shimmer/iota-sdk-evm/references/nodejs/classes/Api/#getinfo),
 and then print the node's information.
 
 ```javascript
-const { Client, initLogger } = require('@iota/sdk');
+const { Api, initLogger } = require('@iota/sdk-evm');
 
 async function run() {
     initLogger();
 
-    const client = await Client.create({
-        nodes: ['https://api.testnet.shimmer.network'],
-    });
+    let api = await Api.create(process.env.WASP_NODE as string);
 
     try {
-        const nodeInfo = await client.getInfo();
+        const nodeInfo = await api.getInfo();
         console.log('Node info: ', nodeInfo);
     } catch (error) {
         console.error('Error: ', error);
@@ -105,36 +102,9 @@ async function run() {
 void run().then(() => process.exit());
 ```
 
-## Wallet Usage
-
-The following example will create a
-new [`Wallet`](https://wiki.iota.org/shimmer/iota-sdk/references/nodejs/classes/Wallet/)
-that connects to the [Shimmer Testnet](https://api.testnet.shimmer.network) using the
-[`StrongholdSecretManager`](https://wiki.iota.org/shimmer/iota-sdk/references/python/iota_sdk/secret_manager/#strongholdsecretmanager-objects).
-
-```javascript
-import {  Wallet, CoinType, WalletOptions } from '@iota/sdk';
-
-const walletOptions: WalletOptions = {
-    storagePath: `Alice`, // A name to associate with the created wallet.
-    clientOptions: {
-        nodes: ['https://api.testnet.shimmer.network'], // The node to connect to.
-    },
-    coinType: CoinType.Shimmer,
-    secretManager: {
-        // Setup Stronghold secret manager
-        stronghold: {
-            snapshotPath: 'vault.stronghold', //  The path to store the wallet snapshot.
-            password: 'a-secure-password', // A password to encrypt the stored data. WARNING: Never hardcode passwords in production code.
-        },
-    },
-};
-const wallet = await Wallet.create(walletOptions);
-```
-
 ## Examples
 
-You can use the provided code [examples](https://github.com/iotaledger/iota-sdk/tree/develop/bindings/nodejs/examples) to get acquainted with the IOTA SDK. You can use the following
+You can use the provided code [examples](https://github.com/iotaledger/iota-sdk-evm/tree/develop/bindings/nodejs/examples) to get acquainted with the IOTA SDK EVM. You can use the following
 command to run any example:
 
 ```bash
@@ -145,13 +115,13 @@ yarn run-example ./[example folder]/[example file]
 - Where `[example file]` is the file name from the example folder. For example:
 
 ```bash
-node examples/client/00_get_info.ts
+node examples/basic/node.ts
 ```
 
 ## API Reference
 
 You can find the API reference for the Node.js bindings in the
-[IOTA Wiki](https://wiki.iota.org/shimmer/iota-sdk/references/nodejs/api_ref/).
+[IOTA Wiki](https://wiki.iota.org/shimmer/iota-sdk-evm/references/nodejs/api_ref/).
 
 ## Available Scripts
 

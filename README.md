@@ -22,7 +22,7 @@ The IOTA EVM SDK is a Rust-based project that provides a convenient and efficien
   underlying API endpoints and enables advanced operations such as custom message construction and direct communication
   with the network.
 
-- **Bindings**: The IOTA SDK includes bindings for `Python`, `Node.js`, and `WASM`, which allow you
+- **Bindings**: The IOTA SDK includes bindings for `Node.js`, and `WASM`, which allow you
   to use the EVM SDK in your preferred programming language. These bindings provide seamless integration with existing
   projects, enabling cross-platform compatibility and flexibility.
 
