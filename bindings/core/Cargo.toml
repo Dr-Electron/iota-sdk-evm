@@ -10,7 +10,7 @@ publish = false
 
 [dependencies]
 iota-sdk-evm = { path = "../../sdk" }
-iota-sdk = { git = "https://github.com/iotaledger/iota-sdk", branch = "develop", default-features = false, features = [ "tls", "wallet", "stronghold", "rand", "storage" ] }
+iota-sdk = { git = "https://github.com/iotaledger/iota-sdk", branch = "develop", default-features = false, features = [ "tls", "wallet", "rand", "storage" ] }
 
 backtrace = { version = "0.3.69", default-features = false, features = ["std"] }
 derivative = { version = "2.2.0", default-features = false }

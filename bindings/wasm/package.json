@@ -33,6 +33,7 @@
         "test2": "npm run bundle:nodejs && wasm-opt -O node/wasm/iota_sdk_evm_wasm_bg.wasm -o node/wasm/iota_sdk_evm_wasm_bg.wasm"
     },
     "dependencies": {
+        "@iota/sdk": "^1.1.2",
         "class-transformer": "^0.5.1",
         "node-fetch": "^2.6.7",
         "qs": "^6.9.7",

@@ -3,7 +3,7 @@ const fs = require('fs');
 const { lintAll } = require('./lints');
 const generatePackage = require('./utils/generatePackage');
 
-const rustPackageName = "iota_sdk_wasm";
+const rustPackageName = "iota_sdk_evm_wasm";
 
 const RELEASE_FOLDER = path.join(__dirname, '../node/wasm/');
 const entryFilePathNode = path.join(RELEASE_FOLDER, rustPackageName + '.js');

@@ -1,6 +1,6 @@
-# IOTA SDK Library - WebAssembly Bindings
+# IOTA SDK EVM Library - WebAssembly Bindings
 
-WebAssembly (Wasm) bindings for TypeScript/JavaScript to the IOTA SDK library.
+WebAssembly (Wasm) bindings for TypeScript/JavaScript to the IOTA SDK EVM library.
 
 ## Which Bindings to Choose?
 
@@ -113,29 +113,26 @@ A bundler such as [webpack](https://webpack.js.org/) or [rollup](https://rollupj
     ]
     ```
 
-## Client Usage
+## Api Usage
 
-The following example creates a [`Client`](https://wiki.iota.org/shimmer/iota-sdk/references/nodejs/classes/Client/)
+The following example creates an [`Api`](https://wiki.iota.org/shimmer/iota-sdk-evm/references/nodejs/classes/Api/)
 instance connected to
 the [Shimmer Testnet](https://api.testnet.shimmer.network), and retrieves the node's information by
-calling [`Client.getInfo()`](https://wiki.iota.org/shimmer/iota-sdk/references/nodejs/classes/Client/#getinfo),
+calling [`Api.getInfo()`](https://wiki.iota.org/shimmer/iota-sdk-evm/references/nodejs/classes/Api/#getinfo),
 and then print the node's information.
 
 ### Node.js
 
 ```javascript
-const {Client, initLogger} = require('@iota/sdk-evm-wasm/node');
+const {Api, initLogger} = require('@iota/sdk-evm-wasm/node');
 
 async function run() {
     initLogger();
 
-    const client = await Client.create({
-        nodes: ['https://api.testnet.shimmer.network'],
-        localPow: true,
-    });
+    let api = await Api.create(process.env.WASP_NODE as string);
 
     try {
-        const nodeInfo = await client.getInfo();
+        const nodeInfo = await api.getInfo();
         console.log('Node info: ', nodeInfo);
     } catch (error) {
         console.error('Error: ', error);
@@ -148,89 +145,19 @@ void run().then(() => process.exit());
 ### Web
 
 ```javascript
-import init, {Client, initLogger} from "@iota/sdk-evm-wasm/web";
+import init, {Api, initLogger} from "@iota/sdk-evm-wasm/web";
 
 init().then(async () => {
     initLogger();
 
-    const client = await Client.create({
-        nodes: ['https://api.testnet.shimmer.network'],
-        localPow: true,
-    });
+    let api = await Api.create(process.env.WASP_NODE as string);
 
-    const nodeInfo = await client.getInfo();
-    console.log('Node info: ', nodeInfo);
-}).catch(console.error);
-
-// Default path to load is "iota_sdk_evm_wasm_bg.wasm", 
-// but you can override it by passing a path explicitly.
-//
-// init("./static/iota_sdk_evm_wasm_bg.wasm").then(...)
-```
-
-## Wallet Usage
-
-The following example will create a
-new [`Wallet`](https://wiki.iota.org/iota-sdk/references/nodejs/classes/Wallet/) [`Account`](https://wiki.iota.org/iota-sdk/references/nodejs/classes/Account/)
-that connects to the [Shimmer Testnet](https://api.testnet.shimmer.network) using the
-[`MnemonicSecretManager`](https://wiki.iota.org/iota-sdk/references/nodejs/interfaces/MnemonicSecretManager/)
-by calling
-the [`Wallet.createAccount(data)`](https://wiki.iota.org/iota-sdk/references/nodejs/classes/Wallet/#createaccount)
-function.
-
-### Node.js
-
-```javascript
-const { Wallet, CoinType } = require('@iota/sdk-evm-wasm/node');
-
-async function run() {
     try {
-        const wallet = await Wallet.create({
-            storagePath: './my-database',
-            coinType: CoinType.Shimmer,
-            clientOptions: {
-                nodes: ['https://api.testnet.shimmer.network'],
-            },
-            secretManager: {
-                mnemonic: "my development mnemonic",
-            },
-        });
-
-        const account = await wallet.createAccount({
-            alias: 'Alice',
-        });
-
-        const addresses = await account.addresses();
-        console.log(addresses);
-    } catch (err) { console.error }
-}
-
-void run().then(() => process.exit());
-```
-
-### Web
-
-```javascript
-import init, {Wallet, CoinType} from "@iota/sdk-evm-wasm/web";
-
-init().then(async () => {
-    const wallet = await Wallet.create({
-        storagePath: './my-database',
-        coinType: CoinType.Shimmer,
-        clientOptions: {
-            nodes: ['https://api.testnet.shimmer.network'],
-        },
-        secretManager: {
-            mnemonic: "my development mnemonic",
-        },
-    });
-
-    const account = await wallet.createAccount({
-        alias: 'Alice',
-    });
-
-    const addresses = await account.addresses();
-    console.log(addresses);
+        const nodeInfo = await api.getInfo();
+        console.log('Node info: ', nodeInfo);
+    } catch (error) {
+        console.error('Error: ', error);
+    }
 }).catch(console.error);
 
 // Default path to load is "iota_sdk_evm_wasm_bg.wasm", 

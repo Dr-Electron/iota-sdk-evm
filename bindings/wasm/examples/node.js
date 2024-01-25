@@ -1,50 +1,22 @@
-// Copyright 2023 IOTA Stiftung
+// Copyright 2024 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
 const console = require('console');
-const { Wallet, CoinType, initLogger, SecretManager } = require('../node/lib');
+const { Api, initLogger } = require('@iota/sdk-evm-wasm/node');
 
 async function run() {
-    // Config doesn't work yet but this is an example for the future
-    await initLogger({
-        name: 'stdout',
-        levelFilter: 'debug',
-        colorEnabled: true,
-    });
+    initLogger();
 
-    const mnemonicSecretManager = {
-        mnemonic:
-            'inhale gorilla deny three celery song category owner lottery rent author wealth penalty crawl hobby obtain glad warm early rain clutch slab august bleak',
-    };
+    let api = await Api.create(process.env.WASP_NODE);
 
-    const secretManager = SecretManager.create(mnemonicSecretManager);
+    try {
+        const nodeInfo = await api.getInfo();
+        console.log('Node info: ', nodeInfo);
 
-    const walletAddress = await secretManager.generateEd25519Addresses({
-        coinType: CoinType.IOTA,
-        accountIndex: 0,
-        range: {
-            start: 0,
-            end: 1,
-        },
-        bech32Hrp: 'tst',
-    });
-
-    const wallet = await Wallet.create({
-        address: walletAddress[0],
-        storagePath: './alice-database',
-        bipPath: {
-            coinType: CoinType.IOTA,
-        },
-        clientOptions: {
-            nodes: ['https://api.testnet.shimmer.network'],
-        },
-        secretManager: mnemonicSecretManager,
-    });
-
-    console.log('wallet created');
-
-    const balance = await wallet.sync();
-    console.log(balance);
+        console.log(await api.getReceipt(Constants.TESTNET_CHAIN_ADDRESS, "0x49f2b03ff9fc646ffaf54a8da752ba50c8e112fac3ef82b06025d819be2b3d130000"))
+    } catch (error) {
+        console.error('Error: ', error);
+    }
 }
 
 void run().then(() => process.exit());

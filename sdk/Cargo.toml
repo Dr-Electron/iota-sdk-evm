@@ -3,10 +3,8 @@ name = "iota-sdk-evm"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-iota-sdk = { git = "https://github.com/iotaledger/iota-sdk", branch = "develop", default-features = false, features = [ "tls", "wallet", "stronghold", "rand", "storage" ] }
+iota-sdk = { git = "https://github.com/iotaledger/iota-sdk", branch = "develop", default-features = false, features = [ "tls", "wallet", "rand", "storage" ] }
 tokio = { version = "1.26" }
 dotenvy = { version = "0.15" }
 serde = "1.0"
@@ -25,3 +23,7 @@ iota-crypto = { version = "0.23.0", default-features = false, features = [
 [[example]]
 name = "basic"
 path = "examples/basic.rs"
+
+[[example]]
+name = "node"
+path = "examples/node.rs"

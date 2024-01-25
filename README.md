@@ -1,6 +1,6 @@
 # IOTA EVM SDK Library
 
-[![Coverage Status](https://coveralls.io/repos/github/iotaledger/iota-sdk-evm/badge.svg?branch=develop)](https://coveralls.io/github/iotaledger/iota-sdk-evm?branch=develop)
+[![Coverage Status](https://coveralls.io/repos/github/iotaledger/iota-sdk-evm/badge.svg?branch=main)](https://coveralls.io/github/iotaledger/iota-sdk-evm?branch=main)
 
 The IOTA EVM SDK is a Rust-based project that provides a convenient and efficient way to interact with the Shimmer EVM in the IOTA network. 
 
@@ -32,10 +32,8 @@ This library follows the following branching strategy:
 
 | Branch       | Description                                                                                                                    |
 |--------------|--------------------------------------------------------------------------------------------------------------------------------|
-| `develop`    | Ongoing development for future releases of the staging networks. This branch gets merged into `staging` on release.            |
-| `production` | The latest releases for the IOTA network.                                                                                      |
-| `staging`    | The latest releases for the Shimmer network.                                                                                   |
-| other        | Other branches that may reflect current projects. Like `develop`, they will find their way into `staging` once they are ready. |
+| `main`    | Ongoing development for future releases of the staging networks.          |
+
 
 ## Before You Start
 
