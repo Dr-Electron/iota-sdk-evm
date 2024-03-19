@@ -1253,6 +1253,50 @@ dependencies = [
 [[package]]
 name = "iota-sdk"
 version = "1.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "76d62d16468c4bc555cac621734b5aa4fa971341f8fe3938d4481f7f394b9167"
+dependencies = [
+ "anymap",
+ "async-trait",
+ "bech32",
+ "bitflags 2.4.2",
+ "bytemuck",
+ "derive_more",
+ "futures",
+ "getset",
+ "gloo-timers",
+ "hashbrown",
+ "heck",
+ "hex",
+ "instant",
+ "iota-crypto",
+ "iota_stronghold",
+ "iterator-sorted 0.1.0",
+ "itertools",
+ "lazy_static",
+ "log",
+ "num_cpus",
+ "once_cell",
+ "packable 0.8.3",
+ "prefix-hex",
+ "primitive-types",
+ "rand",
+ "regex",
+ "reqwest",
+ "rumqttc",
+ "serde",
+ "serde_json",
+ "serde_repr",
+ "thiserror",
+ "time",
+ "tokio",
+ "url",
+ "zeroize",
+]
+
+[[package]]
+name = "iota-sdk"
+version = "1.1.4"
 source = "git+https://github.com/iotaledger/iota-sdk?branch=develop#d9eea41a7b86ad1b4c3bd39e8f9ac5a40b70d5e8"
 dependencies = [
  "anymap",
@@ -1301,7 +1345,7 @@ dependencies = [
  "hex",
  "instant",
  "iota-crypto",
- "iota-sdk",
+ "iota-sdk 1.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "log",
  "prefix-hex",
  "reqwest",
@@ -1322,7 +1366,7 @@ dependencies = [
  "futures",
  "hex",
  "iota-crypto",
- "iota-sdk",
+ "iota-sdk 1.1.4 (git+https://github.com/iotaledger/iota-sdk?branch=develop)",
  "iota-sdk-evm",
  "log",
  "packable 0.10.1",
