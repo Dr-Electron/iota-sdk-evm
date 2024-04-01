@@ -177,5 +177,5 @@ pub struct AssetsDto {
     #[serde(with = "iota_sdk::utils::serde::string")]
     pub base_tokens: u64,
     pub nfts: Option<Vec<String>>,
-    pub native_tokens: Vec<String>,
+    pub native_tokens: Vec<NativeToken>,
 }
