@@ -21,7 +21,7 @@ iota-crypto = { version = "0.23.0", default-features = false, features = [
 ] }
 
 [dev-dependencies]
-iota-sdk = { version = "1.1.4", default-features = false, features = [ "rocksdb", "stronghold" ] }
+iota-sdk = { version = "1.1.4", default-features = false, features = [ "rocksdb", "stronghold", "irc_27", "irc_30" ] }
 
 [[example]]
 name = "basic"
@@ -30,3 +30,20 @@ path = "examples/basic.rs"
 [[example]]
 name = "node"
 path = "examples/node.rs"
+
+[[example]]
+name = "send_nft"
+path = "examples/send_nft.rs"
+
+# Utility examples
+[[example]]
+name = "utility_create_wallet"
+path = "examples/utilities/create_wallet.rs"
+
+[[example]]
+name = "utility_create_native_token"
+path = "examples/utilities/create_native_token.rs"
+
+[[example]]
+name = "utility_create_nft"
+path = "examples/utilities/create_nft.rs"
