@@ -7,11 +7,12 @@ pub(crate) mod http_client;
 /// Structs for nodes
 use std::fmt::Debug;
 
+use crypto::signatures::secp256k1_ecdsa::EvmAddress;
 use instant::Duration;
 use iota_sdk::{
     client::node_manager::node::Node,
     packable::PackableExt,
-    types::block::{address::Bech32Address, output::OutputId},
+    types::block::{address::Bech32Address, output::OutputId, rand::string},
 };
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json::Value;
@@ -50,6 +51,14 @@ impl Api {
     /// Returns the balance of an l1 address available for l2 transfers.
     /// GET /v1/chains/{chain}/core/accounts/account/{address}/balance
     pub async fn get_balance(&self, chain: &str, address: Bech32Address) -> Result<AssetsDto> {
+        let path = &format!("v1/chains/{chain}/core/accounts/account/{address}/balance");
+
+        self.get_request(path, None, true, true).await
+    }
+
+    /// Returns the balance of an l1 address available for l2 transfers.
+    /// GET /v1/chains/{chain}/core/accounts/account/{address}/balance
+    pub async fn get_balance_l2(&self, chain: &str, address: String) -> Result<AssetsDto> {
         let path = &format!("v1/chains/{chain}/core/accounts/account/{address}/balance");
 
         self.get_request(path, None, true, true).await

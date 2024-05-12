@@ -57,7 +57,7 @@ async fn main() -> Result<()> {
 
     let nft_params = [MintNftParams::new()
         //.try_with_address(NFT1_OWNER_ADDRESS)?
-        .try_with_sender(sender_address)?
+        //.try_with_sender(sender_address)?
         .try_with_issuer(sender_address)?
         .with_immutable_metadata(metadata.to_bytes())];
 

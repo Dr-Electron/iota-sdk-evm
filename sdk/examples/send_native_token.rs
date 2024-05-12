@@ -123,6 +123,8 @@ async fn send_native_token_to_evm(
     to_address: &EvmAddress,
 ) -> Result<BlockId> {
     let metadata = deposit_to(tokens.clone(), to_address);
+    println!("metadata: '{:x?}'", metadata.pack_to_vec());
+    panic!("stop here");
 
     let outputs = [
         BasicOutputBuilder::new_with_amount(1_000_000)

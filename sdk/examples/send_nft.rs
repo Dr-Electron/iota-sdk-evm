@@ -17,7 +17,7 @@ use iota_sdk::{
     types::block::{
         address::Bech32Address,
         output::{
-            feature::{MetadataFeature, SenderFeature}, unlock_condition::AddressUnlockCondition, Feature, NativeToken, NftId, NftOutput, NftOutputBuilder, Output
+            feature::{IssuerFeature, MetadataFeature, SenderFeature}, unlock_condition::AddressUnlockCondition, BasicOutputBuilder, Feature, NativeToken, NftId, NftOutput, NftOutputBuilder, Output
         },
         payload::transaction::TransactionId,
         BlockId,
@@ -28,6 +28,7 @@ use iota_sdk::{
 use iota_sdk_evm::{
     ethereum_agent_id, Api, ContractIdentity, EvmAddress, RequestMetadata, Result, ACCOUNTS, TESTNET_CHAIN_ADDRESS
 };
+use prefix_hex::ToHexPrefixed;
 use url::Url;
 
 const CUSTOM_CHAIN_ADDRESS: &str = TESTNET_CHAIN_ADDRESS;
@@ -80,6 +81,11 @@ async fn main() -> Result<()> {
         println!("NFT ID: '{:?}'", nft_id);
 
         let assets_pre = api.get_balance(CUSTOM_CHAIN_ADDRESS, *account_addr.address()).await?;
+        let agent_id = &ethereum_agent_id(
+            "42f7da9bdb55b3ec87e5ac1a1e6d88e16768663fde5eca3429eb6f579cc538ac",
+            &_evm_addr,
+        );
+        let assets_pre = api.get_balance_l2(CUSTOM_CHAIN_ADDRESS, agent_id.to_hex_prefixed()).await?;
         println!("EVM balance pre: '{:?}'", assets_pre);
         
         // Send on our own l2 linked account
@@ -91,6 +97,7 @@ async fn main() -> Result<()> {
 
         println!("await 1 milestone...");
         let assets_post = api.get_balance(CUSTOM_CHAIN_ADDRESS, *account_addr.address()).await?;
+        let assets_post = api.get_balance_l2(CUSTOM_CHAIN_ADDRESS, agent_id.to_hex_prefixed()).await?;
         println!("EVM balance post: '{:?}'", assets_post);
     } else {
         println!("No NFTs found, please create one first.");
@@ -116,9 +123,26 @@ async fn send_nft_to_evm(
 
     //let protocol_parameters = account.client().get_protocol_parameters().await?;
     let metadata = deposit_to(vec![nft_id.clone()], to_address);
+    //println!("Metadata: '{:x?}'", metadata.pack_to_vec());
+    //panic!("stop here");
+    println!("NFT ID: '{:?}'", nft_id);
 
     let outputs = [
         NftOutputBuilder::new_with_amount(1_000_000, nft_id)//new_with_minimum_storage_deposit(protocol_parameters.rent_structure().clone(), nft_id)
+            .add_unlock_condition(AddressUnlockCondition::from(
+                Bech32Address::from_str(CUSTOM_CHAIN_ADDRESS)?.inner().clone(),
+            ))
+            // TODO: Copy all needed features and check where to add the metadata
+            .with_features([
+                Feature::from(MetadataFeature::new(metadata.pack_to_vec())?),
+                Feature::from(SenderFeature::new(from_addr.address().clone())),
+            ]
+            )
+            .with_immutable_features(nft.immutable_features().clone())
+            .finish()
+            .unwrap()
+            .into(),
+        /*BasicOutputBuilder::new_with_amount(1_000_000)
             .add_unlock_condition(AddressUnlockCondition::from(
                 Bech32Address::from_str(CUSTOM_CHAIN_ADDRESS)?.inner().clone(),
             ))
@@ -126,10 +150,9 @@ async fn send_nft_to_evm(
                 Feature::from(MetadataFeature::new(metadata.pack_to_vec())?),
                 Feature::from(SenderFeature::new(from_addr.address().clone())),
             ])
-            .with_immutable_features(nft.immutable_features().clone())
             .finish()
             .unwrap()
-            .into(),
+            .into(),*/
     ];
 
     let transaction = account.send_outputs(outputs, None).await?;
@@ -166,12 +189,13 @@ fn deposit_to(nft_ids: Vec<NftId>, address: &EvmAddress) -> RequestMetadata {
         ContractIdentity::Null,
         ACCOUNTS.to_string(),
         "transferAllowanceTo".to_string(),
-        10000,//MIN_GAS_FEE
+        1_000_000,//MIN_GAS_FEE
     );
     metadata.params.insert(
         "a".to_string(),
         ethereum_agent_id(
-            "97de24fe2e39737ff9d0fd1d7d9b50f9d4049badbc7ec49462cbb7e08dcb4535",
+            // TODO: Use static value
+            "42f7da9bdb55b3ec87e5ac1a1e6d88e16768663fde5eca3429eb6f579cc538ac",
             address,
         ),
     );
