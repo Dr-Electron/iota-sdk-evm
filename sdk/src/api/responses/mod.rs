@@ -13,8 +13,8 @@ use crate::AssetsDto;
 #[serde(rename_all = "camelCase")]
 pub struct ReceiptResponse {
     pub request: Request,
-    pub raw_error: NodeError,
-    pub error_message: String,
+    pub raw_error: Option<NodeError>,
+    pub error_message: Option<String>,
     pub gas_budget: String,
     pub gas_burned: String,
     pub gas_fee_charged: String,

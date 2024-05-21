@@ -28,5 +28,15 @@ name = "basic"
 path = "examples/basic.rs"
 
 [[example]]
+name = "deposit_base_token"
+path = "examples/deposit_base_token.rs"
+
+[[example]]
 name = "node"
 path = "examples/node.rs"
+
+##
+# Utility examples
+[[example]]
+name = "utility_create_wallet"
+path = "examples/utilities/create_account.rs"
